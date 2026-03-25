@@ -1,0 +1,23 @@
+{
+  "business_slug": "jubilant-careers",
+  "business_name": "Jubilant Careers",
+  "tagline": "Find Work That Feels Like Winning.",
+  "description": "AI-powered career platform connecting job seekers with opportunities and helping employers find the right talent — faster, smarter, and with less friction on both sides.",
+  "website_url": "https://jubilantcareers.com",
+  "primary_color": "#2D6A4F",
+  "secondary_color": "#F4A261",
+  "accent_color": "#52B788",
+  "bg_color": "#FAFAF8",
+  "text_color": "#1A1A2E",
+  "heading_font": "Playfair Display",
+  "body_font": "Lato",
+  "tone_keywords": ["empowering", "optimistic", "human", "professional", "encouraging"],
+  "voice_style": "warm and motivating — like a career coach who genuinely believes in you",
+  "avoid_words": ["grind", "hustle", "rejection", "failure", "desperate"],
+  "mission": "To make every job search feel like a step toward something better — not just another application sent into the void.",
+  "vision": "A world where every person finds work that matches their skills, values, and potential.",
+  "values": ["Human dignity in hiring", "Opportunity for all", "Transparency", "Speed to placement", "Continuous growth"],
+  "target_audience": "Job seekers (18-45) looking for meaningful work, and SMB employers who struggle to find and retain quality candidates",
+  "usp": "Unlike job boards that just post listings, Jubilant Careers uses AI to match, prep, and guide candidates all the way through to offer — and helps employers build teams that actually stick.",
+  "status": "In development — coming soon"
+}

@@ -1,0 +1,28 @@
+{
+  "business_slug": "voicemio",
+  "business_name": "VoiceMIO",
+  "tagline": "Your Business. Always Answering.",
+  "description": "AI voice agent SaaS platform — custom voice agents for 142+ industries, powered by VAPI and ElevenLabs. From appointment booking to lead qualification to 24/7 customer support.",
+  "website_url": "https://voicemio.com",
+  "primary_color": "#00D4FF",
+  "secondary_color": "#7C3AED",
+  "accent_color": "#00FF88",
+  "bg_color": "#0A0A1A",
+  "text_color": "#FFFFFF",
+  "heading_font": "Space Grotesk",
+  "body_font": "DM Sans",
+  "tone_keywords": ["friendly", "tech-forward", "approachable", "innovative", "human"],
+  "voice_style": "warm and knowledgeable — like a smart friend who happens to be a tech expert",
+  "avoid_words": ["robot", "bot", "automated message", "press 1", "hold music"],
+  "mission": "To give every business a voice that never sleeps, never misses a call, and always sounds amazing.",
+  "vision": "The world's first truly intelligent voice layer for every business on earth.",
+  "values": ["Human-first AI", "Voice quality obsession", "Speed to value", "Industry expertise"],
+  "target_audience": "Business owners in service industries (dental, restaurant, real estate, fitness, etc.) who miss calls and lose leads",
+  "usp": "Unlike generic call center software, VoiceMIO agents are pre-trained for your specific industry and sound indistinguishable from a human receptionist.",
+  "voice_stack": {
+    "platform": "VAPI",
+    "tts_provider": "ElevenLabs",
+    "ai_model": "claude-sonnet-4-20250514",
+    "supported_industries": 142
+  }
+}
