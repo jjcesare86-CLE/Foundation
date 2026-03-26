@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(clip.exe)",
+      "Bash(winget install:*)",
+      "Bash(npm install:*)",
+      "Bash(npx supabase:*)",
+      "Bash(python sql/run_migrations.py)",
+      "Bash(npx create-next-app@latest frontend --js --app --no-tailwind --no-eslint --no-turbopack --no-src-dir --import-alias \"@/*\" --use-npm)",
+      "Bash(npx next:*)",
+      "Bash(mkdir -p skills/social-brand-launcher/references workspace/client-launches)",
+      "Bash(touch workspace/client-launches/.gitkeep)",
+      "Bash(find 'c:\\\\Users\\\\jjces\\\\OneDrive\\\\Desktop\\\\Claude Foundation\\\\foundation-org\\\\frontend\\\\app' -type f \\\\\\(-name *.tsx -o -name *.jsx -o -name *.ts -o -name *.js \\\\\\))",
+      "Bash(find 'c:\\\\Users\\\\jjces\\\\OneDrive\\\\Desktop\\\\Claude Foundation\\\\foundation-org' -maxdepth 2 -type f \\\\\\(-name *.py -o -name *.md -o -name README* \\\\\\))",
+      "Bash(find 'c:\\\\Users\\\\jjces\\\\OneDrive\\\\Desktop\\\\Claude Foundation\\\\foundation-org\\\\foundation-api' -type f -name *.py)",
+      "Bash(find 'c:\\\\Users\\\\jjces\\\\OneDrive\\\\Desktop\\\\Claude Foundation\\\\foundation-org\\\\frontend\\\\app' -type f -name *.js -o -name *.jsx -o -name *.ts -o -name *.tsx)"
+    ]
+  }
+}
