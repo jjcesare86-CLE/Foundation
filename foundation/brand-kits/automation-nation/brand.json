@@ -1,0 +1,28 @@
+{
+  "business_slug": "automation-nation",
+  "business_name": "Automation Nation",
+  "tagline": "Automate Everything. Scale Without Limits.",
+  "description": "AI-powered automation platform that builds, deploys, and manages complete business automation systems for SMBs — from voice agents to social media to internal operations.",
+  "website_url": "https://automaition-nation.onrender.com",
+  "primary_color": "#1B2A4A",
+  "secondary_color": "#C41E3A",
+  "accent_color": "#D4AF37",
+  "bg_color": "#0D1B2A",
+  "text_color": "#FFFFFF",
+  "heading_font": "Montserrat",
+  "body_font": "Inter",
+  "tone_keywords": ["authoritative", "results-driven", "innovative", "trustworthy", "bold"],
+  "voice_style": "confident and direct — like a seasoned business strategist who gets things done",
+  "avoid_words": ["cheap", "basic", "simple", "just", "easy", "simple solution"],
+  "mission": "To give every business owner the power of a Fortune 500 automation team — without the Fortune 500 budget.",
+  "vision": "A world where every SMB runs with the efficiency and intelligence of a technology company.",
+  "values": ["Execution over talk", "Automation first", "Client outcomes", "Continuous improvement", "Transparency"],
+  "target_audience": "SMB owners (5-100 employees) who are overwhelmed with manual processes and ready to scale with AI",
+  "usp": "We don't just consult — we build, deploy, and manage your entire automation stack so you can focus on growing your business.",
+  "tiers": {
+    "essentials": { "price": 199, "description": "Core automation for solo operators" },
+    "professional": { "price": 699, "description": "Full automation suite for growing teams" },
+    "enterprise": { "price": 1899, "description": "Complete AI business operating system" },
+    "growth_package": { "price": 40000, "description": "Full white-glove build + scale" }
+  }
+}
