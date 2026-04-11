@@ -28,7 +28,7 @@ import os
 import json
 import uuid
 import httpx
-import anthropic
+from app.llm_router import llm_call_json, TaskTier
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 from typing import Optional
@@ -141,8 +141,6 @@ def build_employee_from_transcript(transcript: str) -> dict:
     Takes the raw call transcript and uses Claude to extract structured
     employee data + generate a full deployable system prompt.
     """
-    client = anthropic.Anthropic(api_key=ANTHROPIC_KEY)
-
     extraction_prompt = f"""You are processing a transcript from an AI employee design interview.
 Extract the key information and build a complete AI employee profile.
 
@@ -164,25 +162,16 @@ Return a JSON object with exactly these fields:
   "suggested_color": "A hex color that matches this department/role vibe",
   "suggested_bg": "A lighter version of that color with low opacity (rgba format)",
   "system_prompt": "A complete, deployable AI system prompt for this employee. Include: identity, expertise areas, hard scope rules with exact redirect language, information-gathering protocol (must ask clarifying questions before producing output), quality standards, and opening greeting. Make it exceptional — this is a premium custom build."
-}}
+}}"""
 
-Return ONLY the JSON. No markdown, no preamble."""
-
-    message = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=2000,
+    return llm_call_json(
         messages=[{"role": "user", "content": extraction_prompt}],
+        tier=TaskTier.STANDARD,
+        max_tokens=2000,
+        project="AN",
+        agent_name="voice_employee_builder",
+        task_type="extract_employee_profile",
     )
-
-    raw = message.content[0].text.strip()
-    # Strip any accidental markdown fences
-    if raw.startswith("```"):
-        raw = raw.split("```")[1]
-        if raw.startswith("json"):
-            raw = raw[4:]
-    raw = raw.strip()
-
-    return json.loads(raw)
 
 # ─── Supabase save helper ─────────────────────────────────────────────────────
 

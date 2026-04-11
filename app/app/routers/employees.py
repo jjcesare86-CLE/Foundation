@@ -7,7 +7,7 @@ Used by Automation Nation, VoiceMIO, and any other platform in the Foundation st
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 from typing import Optional
-import anthropic
+from app.llm_router import llm_call, TaskTier
 import os
 
 router = APIRouter(prefix="/employees", tags=["employees"])
@@ -360,8 +360,6 @@ async def generate_employee_prompt(req: CustomEmployeeRequest):
     """
     Generate a deployable system prompt for a custom AI employee using Claude.
     """
-    client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
-
     user_message = f"""Generate a complete, deployable AI employee system prompt for a business automation agency.
 
 Employee:
@@ -383,14 +381,17 @@ The prompt must include:
 
 Format with clearly labeled sections. Make it direct and immediately deployable."""
 
-    message = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=1000,
+    system_prompt = llm_call(
         messages=[{"role": "user", "content": user_message}],
+        tier=TaskTier.STANDARD,
+        max_tokens=1000,
+        project="AN",
+        agent_name="employees",
+        task_type="generate_employee_prompt",
     )
 
     return {
         "name": req.name.upper(),
         "role": req.role,
-        "system_prompt": message.content[0].text,
+        "system_prompt": system_prompt,
     }
