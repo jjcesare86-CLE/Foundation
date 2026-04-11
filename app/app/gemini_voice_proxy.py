@@ -25,7 +25,7 @@ import asyncio
 import base64
 import json
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from .foundation_agents import AGENT_VOICES
+from app.foundation_agents import AGENT_VOICES
 
 router = APIRouter()
 

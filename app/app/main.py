@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from app.routers import skills, agents, brand, clients, templates, employees, voice_employee_builder
-from .foundation_agents import router as agents_router
-from .gemini_voice_proxy import router as voice_router
+from app.foundation_agents import router as agents_router
+from app.gemini_voice_proxy import router as voice_router
 
 
 app = FastAPI(
