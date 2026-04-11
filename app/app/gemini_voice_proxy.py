@@ -30,7 +30,7 @@ from app.foundation_agents import AGENT_VOICES, AGENT_PROMPTS
 router = APIRouter()
 
 DEFAULT_VOICE = "Aoede"
-GEMINI_LIVE_MODEL = "models/gemini-2.0-flash-exp"
+GEMINI_LIVE_MODEL = "gemini-3.1-flash-live-preview"
 
 DEFAULT_PROMPT = "You are {agent_name}, a helpful AI employee. Be concise and natural."
 
@@ -59,7 +59,7 @@ async def voice_agent_ws(websocket: WebSocket, agent_name: str):
         await websocket.close()
         return
 
-    client = genai.Client(api_key=api_key, http_options={"api_version": "v1alpha"})
+    client = genai.Client(api_key=api_key, http_options={"api_version": "v1beta"})
     config = types.LiveConnectConfig(
         response_modalities=["AUDIO"],
         speech_config=types.SpeechConfig(
