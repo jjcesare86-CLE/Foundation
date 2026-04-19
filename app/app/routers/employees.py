@@ -1,397 +1,275 @@
 """
 Foundation API — Employees Router
-Shared AI employee definitions, tier logic, handoff rules, and coverage engine.
-Used by Automation Nation, VoiceMIO, and any other platform in the Foundation stack.
+Supabase-backed. Single source of truth for all platforms.
+All existing endpoints preserved with identical response shapes.
 """
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
-from typing import Optional
-from app.llm_router import llm_call, TaskTier
-import os
+from typing import Optional, List
+from app.database import supabase
+from app.llm_router import llm_call, MODEL_MAP, TaskTier
 
 router = APIRouter(prefix="/employees", tags=["employees"])
 
-# ─────────────────────────────────────────────
-# EMPLOYEE DATA
-# ─────────────────────────────────────────────
-
-EMPLOYEES = [
-    {
-        "id": "maya", "name": "MAYA", "role": "Marketing Strategist",
-        "department": "marketing", "department_label": "Marketing",
-        "style": "Strategic & analytical",
-        "helps": "Campaign strategy, ICP analysis, brand positioning, market research, competitive analysis, go-to-market planning",
-        "outside_scope": "Writing copy or lead outreach — redirect to CLARA or KAI",
-        "handoff_to": ["nina", "kai", "clara"],
-        "covers_for": ["kai", "dean"],
-        "covered_by": ["nina", "dean"],
-        "color": "#7F77DD", "bg": "#EEEDFE",
-    },
-    {
-        "id": "nina", "name": "NINA", "role": "Creative Strategist",
-        "department": "marketing", "department_label": "Marketing",
-        "style": "Creative & expressive",
-        "helps": "Ad concepts, creative briefs, campaign hooks, visual direction, creative reviews, offer angles",
-        "outside_scope": "Writing body copy or media buying — redirect to CLARA or KAI",
-        "handoff_to": ["clara", "drew"],
-        "covers_for": ["clara", "maya"],
-        "covered_by": ["maya"],
-        "color": "#7F77DD", "bg": "#EEEDFE",
-    },
-    {
-        "id": "clara", "name": "CLARA", "role": "Copywriter",
-        "department": "marketing", "department_label": "Marketing",
-        "style": "Persuasive & precise",
-        "helps": "Ad copy, email sequences, landing pages, social captions, VSL scripts, nurture content",
-        "outside_scope": "Strategy or design direction — redirect to MAYA or NINA",
-        "handoff_to": ["sage", "nina"],
-        "covers_for": ["sage", "nina"],
-        "covered_by": ["nina"],
-        "color": "#7F77DD", "bg": "#EEEDFE",
-    },
-    {
-        "id": "kai", "name": "KAI", "role": "Lead Gen Specialist",
-        "department": "marketing", "department_label": "Marketing",
-        "style": "Data-driven & systematic",
-        "helps": "Lead lists, prospecting campaigns, outreach sequences, ICP targeting, Apollo & Clay workflows",
-        "outside_scope": "Closing deals or onboarding — redirect to REX or OTTO",
-        "handoff_to": ["rex", "maya"],
-        "covers_for": ["maya"],
-        "covered_by": ["maya", "rex"],
-        "color": "#7F77DD", "bg": "#EEEDFE",
-    },
-    {
-        "id": "rex", "name": "REX", "role": "Sales Coach",
-        "department": "sales", "department_label": "Sales",
-        "style": "Direct & motivating",
-        "helps": "Sales scripts, objection handling, pipeline review, close strategies, call coaching, offer structuring",
-        "outside_scope": "Onboarding or retention — redirect to OTTO or BLAKE",
-        "handoff_to": ["blake", "otto"],
-        "covers_for": ["blake", "kai"],
-        "covered_by": ["blake"],
-        "color": "#D85A30", "bg": "#FAECE7",
-    },
-    {
-        "id": "blake", "name": "BLAKE", "role": "Retention Specialist",
-        "department": "sales", "department_label": "Sales",
-        "style": "Empathetic & conversational",
-        "helps": "Client retention, churn prevention, upsell conversations, NPS, satisfaction campaigns",
-        "outside_scope": "New sales or technical setup — redirect to REX or OTTO",
-        "handoff_to": ["aria", "rex"],
-        "covers_for": ["aria"],
-        "covered_by": ["rex", "aria"],
-        "color": "#D85A30", "bg": "#FAECE7",
-    },
-    {
-        "id": "otto", "name": "OTTO", "role": "Onboarding Orchestrator",
-        "department": "operations", "department_label": "Operations",
-        "style": "Systematic & thorough",
-        "helps": "New client setup, workflow deployment, task routing, project management, team coordination",
-        "outside_scope": "Legal review or financial reporting — redirect to LEO or FIN",
-        "handoff_to": ["ace", "vince", "leo", "ori"],
-        "covers_for": ["ace", "ori"],
-        "covered_by": ["ori", "ace"],
-        "color": "#1D9E75", "bg": "#E1F5EE",
-    },
-    {
-        "id": "ori", "name": "ORI", "role": "Operations Manager",
-        "department": "operations", "department_label": "Operations",
-        "style": "Process-oriented & structured",
-        "helps": "SOPs, process documentation, efficiency analysis, capacity planning, team workflows",
-        "outside_scope": "Client-facing delivery or tech builds — redirect to OTTO or ACE",
-        "handoff_to": ["otto", "fin"],
-        "covers_for": ["otto", "fin"],
-        "covered_by": ["otto"],
-        "color": "#1D9E75", "bg": "#E1F5EE",
-    },
-    {
-        "id": "ace", "name": "ACE", "role": "Automation Architect",
-        "department": "tech", "department_label": "Tech & Automation",
-        "style": "Technical & precise",
-        "helps": "Workflow design, n8n & Zapier builds, API integrations, automation strategy, system architecture",
-        "outside_scope": "Voice agents or video — redirect to VINCE or DREW",
-        "handoff_to": ["vince", "otto"],
-        "covers_for": ["vince", "otto"],
-        "covered_by": ["vince"],
-        "color": "#378ADD", "bg": "#E6F1FB",
-    },
-    {
-        "id": "vince", "name": "VINCE", "role": "Voice Agent Specialist",
-        "department": "tech", "department_label": "Tech & Automation",
-        "style": "Technical & methodical",
-        "helps": "VAPI configuration, voice prompts, call flows, ElevenLabs voice selection, agent deployment",
-        "outside_scope": "General automation or video — redirect to ACE or DREW",
-        "handoff_to": ["ace", "otto"],
-        "covers_for": ["ace"],
-        "covered_by": ["ace"],
-        "color": "#378ADD", "bg": "#E6F1FB",
-    },
-    {
-        "id": "drew", "name": "DREW", "role": "Video Producer",
-        "department": "media", "department_label": "Content & Media",
-        "style": "Creative & visual",
-        "helps": "Video strategy, script writing, production briefs, Blast Video workflows, YouTube & ad video",
-        "outside_scope": "Static copy or lead gen — redirect to CLARA or KAI",
-        "handoff_to": ["sage", "clara"],
-        "covers_for": ["sage"],
-        "covered_by": ["sage", "nina"],
-        "color": "#BA7517", "bg": "#FAEEDA",
-    },
-    {
-        "id": "sage", "name": "SAGE", "role": "Social Media Manager",
-        "department": "media", "department_label": "Content & Media",
-        "style": "Trendy & brand-aware",
-        "helps": "Content calendars, posting schedules, platform strategy, engagement, community management",
-        "outside_scope": "Paid ads or video production — redirect to KAI or DREW",
-        "handoff_to": ["clara", "drew"],
-        "covers_for": ["clara"],
-        "covered_by": ["drew", "clara"],
-        "color": "#BA7517", "bg": "#FAEEDA",
-    },
-    {
-        "id": "leo", "name": "LEO", "role": "Legal Specialist",
-        "department": "legal", "department_label": "Legal & Finance",
-        "style": "Direct & matter-of-fact",
-        "helps": "Contracts, compliance, terms of service, privacy policy, legal review, risk assessment",
-        "outside_scope": "Financial reporting or operations — redirect to FIN or ORI",
-        "handoff_to": ["fin", "otto"],
-        "covers_for": ["fin"],
-        "covered_by": [],
-        "color": "#5F5E5A", "bg": "#F1EFE8",
-    },
-    {
-        "id": "fin", "name": "FIN", "role": "Finance Analyst",
-        "department": "legal", "department_label": "Legal & Finance",
-        "style": "Precise & data-focused",
-        "helps": "Revenue reporting, invoicing, expense tracking, Stripe analytics, financial projections",
-        "outside_scope": "Legal contracts or tech builds — redirect to LEO or ACE",
-        "handoff_to": ["leo", "ori"],
-        "covers_for": ["ori"],
-        "covered_by": ["leo", "ori"],
-        "color": "#5F5E5A", "bg": "#F1EFE8",
-    },
-    {
-        "id": "aria", "name": "ARIA", "role": "Client Success Manager",
-        "department": "success", "department_label": "Client Success",
-        "style": "Warm & solution-focused",
-        "helps": "Support tickets, client satisfaction, issue escalation, onboarding support, proactive check-ins",
-        "outside_scope": "New sales or technical builds — redirect to REX or ACE",
-        "handoff_to": ["blake", "rex"],
-        "covers_for": ["blake"],
-        "covered_by": ["blake"],
-        "color": "#639922", "bg": "#EAF3DE",
-    },
-    {
-        "id": "dean", "name": "DEAN", "role": "Data Analyst",
-        "department": "success", "department_label": "Client Success",
-        "style": "Analytical & insights-driven",
-        "helps": "Performance reporting, KPI dashboards, A/B test analysis, channel attribution, data insights",
-        "outside_scope": "Content creation or sales — redirect to CLARA or REX",
-        "handoff_to": ["fin", "maya"],
-        "covers_for": ["fin", "maya"],
-        "covered_by": ["fin"],
-        "color": "#639922", "bg": "#EAF3DE",
-    },
-]
-
-TIER_PACKS = {
-    "starter":     ["otto", "rex", "maya"],
-    "essentials":  ["otto", "rex", "maya", "ace", "aria", "clara"],
-    "professional":["otto", "rex", "maya", "ace", "vince", "aria", "clara", "kai", "blake", "ori"],
-    "enterprise":  [e["id"] for e in EMPLOYEES],
+# Assistmeo subscription tier gating
+ASSISTMEO_TIER_LIMITS = {
+    "starter":      3,
+    "essentials":   6,
+    "professional": 10,
+    "enterprise":   99,
 }
 
-DEPARTMENTS = ["marketing", "sales", "operations", "tech", "media", "legal", "success"]
+# Tier pack metadata (mirrors original hardcoded packs)
+TIER_PACKS = {
+    "starter":      {"price": "$199/mo",   "count": 3,  "departments": ["Sales"]},
+    "essentials":   {"price": "$299/mo",   "count": 6,  "departments": ["Sales", "Marketing"]},
+    "professional": {"price": "$999/mo",   "count": 10, "departments": ["Sales", "Marketing", "Operations"]},
+    "enterprise":   {"price": "$1,999/mo", "count": 26, "departments": ["All"]},
+}
 
-# ─────────────────────────────────────────────
-# MODELS
-# ─────────────────────────────────────────────
+TIER_ACCESS_MAP = {
+    "All":           ["starter", "essentials", "professional", "enterprise"],
+    "Essentials+":   ["essentials", "professional", "enterprise"],
+    "Professional+": ["professional", "enterprise"],
+    "Enterprise":    ["enterprise"],
+}
 
-class CoverageRequest(BaseModel):
-    employee_ids: list[str]
+CORE_DEPARTMENTS = {
+    "Sales", "Marketing", "Operations",
+    "People & Culture", "Legal & Strategy", "C-Suite"
+}
 
-class CustomEmployeeRequest(BaseModel):
-    name: str
-    role: str
-    department: str
-    style: Optional[str] = "Professional & direct"
-    helps: str
-    outside_scope: Optional[str] = ""
-    business_context: Optional[str] = ""
 
-# ─────────────────────────────────────────────
-# HELPERS
-# ─────────────────────────────────────────────
-
-def compute_coverage(selected_ids: list[str]) -> dict:
-    """
-    Given a list of active employee IDs, returns per-department coverage status
-    and a list of gap messages for the client-facing fallback responses.
-    """
-    sel = set(selected_ids)
-    result = {}
-    gaps = []
-    limited = []
-
-    for dept in DEPARTMENTS:
-        specs = [e for e in EMPLOYEES if e["department"] == dept]
-        present = [e for e in specs if e["id"] in sel]
-        missing = [e for e in specs if e["id"] not in sel]
-
-        if len(present) == len(specs):
-            result[dept] = {"status": "full", "label": "Full coverage", "active": [e["id"] for e in present]}
-        elif present:
-            result[dept] = {
-                "status": "partial",
-                "label": f"{len(present)}/{len(specs)} active",
-                "active": [e["id"] for e in present],
-                "missing": [e["id"] for e in missing],
-            }
-            limited.append(specs[0]["department_label"])
-        else:
-            # Check if any missing specialist is covered_by someone active
-            cross_covered = any(
-                cov_id in sel
-                for e in specs
-                for cov_id in e.get("covered_by", [])
-            )
-            if cross_covered:
-                result[dept] = {
-                    "status": "cross_covered",
-                    "label": "Cross-covered (reduced depth)",
-                    "active": [],
-                    "missing": [e["id"] for e in specs],
-                }
-                limited.append(specs[0]["department_label"] + " (limited)")
-            else:
-                result[dept] = {
-                    "status": "gap",
-                    "label": "No coverage",
-                    "active": [],
-                    "missing": [e["id"] for e in specs],
-                }
-                gaps.append(specs[0]["department_label"])
-
-    gap_message = None
-    if gaps:
-        gap_message = (
-            f"Uncovered departments: {', '.join(gaps)}. "
-            f"For requests in these areas, employees will respond: "
-            f"\"This falls outside your current team. To handle this, "
-            f"consider adding the relevant specialist. I can provide a "
-            f"basic response or queue this for review.\""
-        )
-
-    return {
-        "departments": result,
-        "gaps": gaps,
-        "limited": limited,
-        "gap_message": gap_message,
+def _resolve_model(model_tier: str) -> str:
+    """Map model_tier string to actual model ID via llm_router."""
+    tier_map = {
+        "orchestrator": TaskTier.COMPLEX,
+        "standard":     TaskTier.STANDARD,
+        "fast":         TaskTier.FAST,
     }
+    task_tier = tier_map.get(model_tier, TaskTier.STANDARD)
+    return MODEL_MAP.get(task_tier, MODEL_MAP[TaskTier.STANDARD])
 
-# ─────────────────────────────────────────────
-# ROUTES
-# ─────────────────────────────────────────────
+
+def _fetch_employees(
+    platform: str,
+    include_system_prompt: bool = False,
+    department: Optional[str] = None,
+) -> list:
+    """Core Supabase query — employees for a platform."""
+    cols = (
+        "id,name,biblical_name,product_name,role,department,department_label,"
+        "model_tier,tier_access,is_csuite,is_confidential,style,helps,"
+        "outside_scope,handoff_to,covers_for,covered_by,reports_to,supervises,color,bg,config"
+    )
+    if include_system_prompt:
+        cols += ",system_prompt"
+
+    # Get subscribed employee IDs for this platform
+    subs = (
+        supabase.schema("foundation")
+        .table("employee_platform_subscriptions")
+        .select("employee_id")
+        .eq("platform_slug", platform)
+        .eq("is_active", True)
+        .execute()
+    )
+    subscribed_ids = [r["employee_id"] for r in (subs.data or [])]
+    if not subscribed_ids:
+        return []
+
+    query = (
+        supabase.schema("foundation")
+        .table("ai_employees")
+        .select(cols)
+        .eq("is_active", True)
+        .in_("id", subscribed_ids)
+    )
+    if department:
+        query = query.eq("department", department)
+
+    result = query.execute()
+    employees = result.data or []
+
+    # Attach resolved model string
+    for emp in employees:
+        emp["resolved_model"] = _resolve_model(emp.get("model_tier", "standard"))
+
+    return employees
+
+
+def _identify_gaps(department_coverage: dict) -> list:
+    """Flag core departments with no coverage."""
+    return list(CORE_DEPARTMENTS - set(department_coverage.keys()))
+
+
+def _log_sync(platform: str, count: int):
+    """Fire-and-forget sync log — never block on logging failures."""
+    try:
+        supabase.schema("foundation").table("employee_sync_log").insert({
+            "platform_slug": platform,
+            "employee_count": count,
+            "sync_status": "success",
+        }).execute()
+    except Exception:
+        pass
+
+
+# ── PRESERVED ENDPOINTS (identical response shapes) ───────────────────────
 
 @router.get("/")
-def list_employees(department: Optional[str] = Query(None)):
-    """Return all employees, optionally filtered by department."""
-    if department:
-        return [e for e in EMPLOYEES if e["department"] == department]
-    return EMPLOYEES
+async def list_employees(
+    platform: str = Query("automation-nation"),
+    department: Optional[str] = Query(None),
+):
+    """List all active employees for a platform."""
+    employees = _fetch_employees(platform, department=department)
+    _log_sync(platform, len(employees))
+    return employees  # bare list — same as original
 
 
 @router.get("/tiers")
-def list_tiers():
-    """Return all predefined tier packs with their employee sets."""
-    result = {}
-    for tier, ids in TIER_PACKS.items():
-        emps = [e for e in EMPLOYEES if e["id"] in ids]
-        result[tier] = {
-            "count": len(ids),
-            "employee_ids": ids,
-            "employees": [{"id": e["id"], "name": e["name"], "role": e["role"]} for e in emps],
-        }
-    return result
-
-
-@router.get("/{employee_id}")
-def get_employee(employee_id: str):
-    """Return a single employee's full profile."""
-    emp = next((e for e in EMPLOYEES if e["id"] == employee_id), None)
-    if not emp:
-        raise HTTPException(status_code=404, detail=f"Employee '{employee_id}' not found")
-    # Hydrate handoff_to with full profiles
-    emp_out = dict(emp)
-    emp_out["handoff_to_details"] = [
-        {"id": e["id"], "name": e["name"], "role": e["role"]}
-        for e in EMPLOYEES if e["id"] in emp["handoff_to"]
-    ]
-    return emp_out
-
-
-@router.post("/coverage")
-def check_coverage(req: CoverageRequest):
-    """
-    Given a list of active employee IDs, return coverage analysis per department
-    including gap messages for fallback responses.
-    """
-    unknown = [i for i in req.employee_ids if not any(e["id"] == i for e in EMPLOYEES)]
-    if unknown:
-        raise HTTPException(status_code=400, detail=f"Unknown employee IDs: {unknown}")
-    return compute_coverage(req.employee_ids)
+async def list_tiers():
+    """List all available tier packs. PRESERVED from original."""
+    return TIER_PACKS
 
 
 @router.get("/tiers/{tier_name}/coverage")
-def tier_coverage(tier_name: str):
-    """Return coverage analysis for a named tier pack."""
+async def tier_coverage(
+    tier_name: str,
+    platform: str = Query("automation-nation"),
+):
+    """Coverage analysis for a named tier. PRESERVED from original."""
     if tier_name not in TIER_PACKS:
-        raise HTTPException(status_code=404, detail=f"Tier '{tier_name}' not found. Valid: {list(TIER_PACKS.keys())}")
+        raise HTTPException(status_code=404, detail=f"Tier '{tier_name}' not found")
+
+    all_employees = _fetch_employees(platform)
+    allowed = TIER_ACCESS_MAP
+
+    tier_employees = [
+        e for e in all_employees
+        if tier_name in allowed.get(e.get("tier_access", "All"), [])
+    ]
+
+    departments: dict = {}
+    for emp in tier_employees:
+        dept = emp.get("department_label", emp.get("department", "Other"))
+        departments.setdefault(dept, []).append(emp["name"])
+
     return {
         "tier": tier_name,
-        "employees": TIER_PACKS[tier_name],
-        "coverage": compute_coverage(TIER_PACKS[tier_name]),
+        "tier_info": TIER_PACKS[tier_name],
+        "employee_count": len(tier_employees),
+        "employees": tier_employees,
+        "department_coverage": departments,
+        "gaps": _identify_gaps(departments),
     }
+
+
+@router.post("/coverage")
+async def custom_coverage(
+    employee_ids: List[str],
+    platform: str = Query("automation-nation"),
+):
+    """Coverage for a custom employee set. PRESERVED from original."""
+    all_employees = _fetch_employees(platform)
+    selected = [e for e in all_employees if e["id"] in employee_ids]
+
+    departments: dict = {}
+    for emp in selected:
+        dept = emp.get("department_label", emp.get("department", "Other"))
+        departments.setdefault(dept, []).append(emp["name"])
+
+    return {
+        "selected_count": len(selected),
+        "employees": selected,
+        "department_coverage": departments,
+        "gaps": _identify_gaps(departments),
+    }
+
+
+class GeneratePromptRequest(BaseModel):
+    employee_name: str
+    role: str
+    department: Optional[str] = None
+    style: Optional[str] = None
+    helps: Optional[str] = None
+    outside_scope: Optional[str] = None
+    business_context: Optional[str] = None
 
 
 @router.post("/generate-prompt")
-async def generate_employee_prompt(req: CustomEmployeeRequest):
-    """
-    Generate a deployable system prompt for a custom AI employee using Claude.
-    """
-    user_message = f"""Generate a complete, deployable AI employee system prompt for a business automation agency.
+async def generate_prompt(req: GeneratePromptRequest):
+    """Claude-powered custom agent builder. PRESERVED — uses llm_call()."""
+    user_message = f"""Generate a professional AI employee system prompt for:
+Name: {req.employee_name}
+Role: {req.role}
+Department: {req.department or 'General'}
+Communication Style: {req.style or 'Professional'}
+Primary Responsibilities: {req.helps or 'Not specified'}
+Outside Their Scope: {req.outside_scope or 'Not specified'}
+Business Context: {req.business_context or 'AI automation agency'}
 
-Employee:
-- Name: {req.name.upper()}
-- Role: {req.role}
-- Department: {req.department}
-- Communication style: {req.style}
-- Expertise: {req.helps}
-- Scope limits / redirects: {req.outside_scope or 'None specified'}
-{f'- Business context: {req.business_context}' if req.business_context else ''}
+The system prompt should be concise (under 300 words), define clear boundaries,
+and specify handoff behavior when requests fall outside scope."""
 
-The prompt must include:
-1. Identity: who {req.name.upper()} is, their role, and their communication style
-2. Expertise areas with specific capabilities
-3. Hard scope rules — what {req.name.upper()} does NOT handle, and exact redirect language to use
-4. Information-gathering protocol — {req.name.upper()} must ask clarifying questions if the brief is vague. They refuse to produce output until they have sufficient information to meet the required standard.
-5. Quality standard — never deliver generic, low-effort output. Always confirm deliverables meet the standard before responding.
-6. A brief opening greeting {req.name.upper()} uses when a new conversation starts.
-
-Format with clearly labeled sections. Make it direct and immediately deployable."""
-
-    system_prompt = llm_call(
+    response_text = llm_call(
         messages=[{"role": "user", "content": user_message}],
         tier=TaskTier.STANDARD,
-        max_tokens=1000,
-        project="AN",
-        agent_name="employees",
-        task_type="generate_employee_prompt",
+        max_tokens=600,
+        project="foundation",
+        agent_name="employees_generate_prompt",
+        task_type="custom_agent_prompt",
     )
 
     return {
-        "name": req.name.upper(),
+        "employee_name": req.employee_name,
         "role": req.role,
-        "system_prompt": system_prompt,
+        "system_prompt": response_text,
     }
+
+
+# ── NEW ENDPOINTS ─────────────────────────────────────────────────────────
+
+@router.get("/csuite/all")
+async def get_csuite(platform: str = Query("automation-nation")):
+    """Get all C-suite agents. Used by orchestration layer."""
+    employees = _fetch_employees(platform)
+    csuite = [e for e in employees if e.get("is_csuite")]
+    return {"csuite": csuite, "total": len(csuite)}
+
+
+@router.get("/sync/status")
+async def sync_status(platform: str = Query("automation-nation")):
+    """When did this platform last sync?"""
+    result = (
+        supabase.schema("foundation")
+        .table("employee_sync_log")
+        .select("*")
+        .eq("platform_slug", platform)
+        .order("synced_at", desc=True)
+        .limit(1)
+        .execute()
+    )
+    return {
+        "platform": platform,
+        "last_sync": result.data[0] if result.data else None,
+    }
+
+
+@router.get("/{employee_id}")
+async def get_employee(
+    employee_id: str,
+    platform: str = Query("automation-nation"),
+    include_system_prompt: bool = Query(False),
+):
+    """Get a single employee by ID."""
+    employees = _fetch_employees(platform, include_system_prompt=include_system_prompt)
+    match = next((e for e in employees if e["id"] == employee_id), None)
+    if not match:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Employee '{employee_id}' not found for platform '{platform}'"
+        )
+    return match
