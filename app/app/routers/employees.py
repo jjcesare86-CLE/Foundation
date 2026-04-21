@@ -1,7 +1,10 @@
 """
 Foundation API — Employees Router
-Supabase-backed. Single source of truth for all platforms.
-All existing endpoints preserved with identical response shapes.
+Supabase-backed. Storage + retrieval only. NO tier gating, NO caps, NO subscription
+enforcement. Each platform (AN, Assistmeo, VoiceMIO, Blast Video, MRLIN) is
+responsible for checking its own client subscriptions and serving accordingly.
+
+Foundation just stores the catalog. Platforms enforce.
 """
 
 from fastapi import APIRouter, HTTPException, Query
@@ -12,37 +15,33 @@ from app.llm_router import llm_call, MODEL_MAP, TaskTier
 
 router = APIRouter(prefix="/employees", tags=["employees"])
 
-# Assistmeo subscription tier gating
-ASSISTMEO_TIER_LIMITS = {
-    "starter":      3,
-    "essentials":   6,
-    "professional": 10,
-    "enterprise":   99,
+# ── DISPLAY-ONLY tier metadata. NEVER used to gate or cap.
+# Platforms read this from the API and use it to build their own pricing pages.
+# Foundation never enforces any of this.
+TIER_DISPLAY_META = {
+    "starter":      {"price": "$199/mo",   "suggested_count": 3,  "featured_departments": ["Sales"]},
+    "essentials":   {"price": "$299/mo",   "suggested_count": 6,  "featured_departments": ["Sales", "Marketing"]},
+    "professional": {"price": "$999/mo",   "suggested_count": 10, "featured_departments": ["Sales", "Marketing", "Operations"]},
+    "enterprise":   {"price": "$1,999/mo", "suggested_count": 26, "featured_departments": ["All"]},
 }
 
-# Tier pack metadata (mirrors original hardcoded packs)
-TIER_PACKS = {
-    "starter":      {"price": "$199/mo",   "count": 3,  "departments": ["Sales"]},
-    "essentials":   {"price": "$299/mo",   "count": 6,  "departments": ["Sales", "Marketing"]},
-    "professional": {"price": "$999/mo",   "count": 10, "departments": ["Sales", "Marketing", "Operations"]},
-    "enterprise":   {"price": "$1,999/mo", "count": 26, "departments": ["All"]},
-}
-
-TIER_ACCESS_MAP = {
-    "All":           ["starter", "essentials", "professional", "enterprise"],
-    "Essentials+":   ["essentials", "professional", "enterprise"],
-    "Professional+": ["professional", "enterprise"],
-    "Enterprise":    ["enterprise"],
+# Maps tier_name → list of tier_access column values that should be
+# *suggested* at that marketing tier. DISPLAY-ONLY. Not a gate.
+TIER_ACCESS_DISPLAY = {
+    "starter":      ["All"],
+    "essentials":   ["All", "Essentials+"],
+    "professional": ["All", "Essentials+", "Professional+"],
+    "enterprise":   ["All", "Essentials+", "Professional+", "Enterprise"],
 }
 
 CORE_DEPARTMENTS = {
     "Sales", "Marketing", "Operations",
-    "People & Culture", "Legal & Strategy", "C-Suite"
+    "People & Culture", "Legal & Strategy", "C-Suite",
 }
 
 
 def _resolve_model(model_tier: str) -> str:
-    """Map model_tier string to actual model ID via llm_router."""
+    """Map model_tier column value to actual model ID via llm_router."""
     tier_map = {
         "orchestrator": TaskTier.COMPLEX,
         "standard":     TaskTier.STANDARD,
@@ -57,7 +56,7 @@ def _fetch_employees(
     include_system_prompt: bool = False,
     department: Optional[str] = None,
 ) -> list:
-    """Core Supabase query — employees for a platform."""
+    """All active employees subscribed to a platform. No gating, no caps."""
     cols = (
         "id,name,biblical_name,product_name,role,department,department_label,"
         "model_tier,tier_access,is_csuite,is_confidential,style,helps,"
@@ -66,7 +65,6 @@ def _fetch_employees(
     if include_system_prompt:
         cols += ",system_prompt"
 
-    # Get subscribed employee IDs for this platform
     subs = (
         supabase.schema("foundation")
         .table("employee_platform_subscriptions")
@@ -89,23 +87,21 @@ def _fetch_employees(
     if department:
         query = query.eq("department", department)
 
-    result = query.execute()
-    employees = result.data or []
-
-    # Attach resolved model string
+    employees = (query.execute().data) or []
     for emp in employees:
         emp["resolved_model"] = _resolve_model(emp.get("model_tier", "standard"))
-
     return employees
 
 
-def _identify_gaps(department_coverage: dict) -> list:
-    """Flag core departments with no coverage."""
-    return list(CORE_DEPARTMENTS - set(department_coverage.keys()))
+def _group_by_department(employees: list) -> dict:
+    groups: dict = {}
+    for emp in employees:
+        dept = emp.get("department_label", emp.get("department", "Other"))
+        groups.setdefault(dept, []).append(emp["name"])
+    return groups
 
 
 def _log_sync(platform: str, count: int):
-    """Fire-and-forget sync log — never block on logging failures."""
     try:
         supabase.schema("foundation").table("employee_sync_log").insert({
             "platform_slug": platform,
@@ -116,23 +112,23 @@ def _log_sync(platform: str, count: int):
         pass
 
 
-# ── PRESERVED ENDPOINTS (identical response shapes) ───────────────────────
+# ── ENDPOINTS ──────────────────────────────────────────────────────────
 
 @router.get("/")
 async def list_employees(
     platform: str = Query("automation-nation"),
     department: Optional[str] = Query(None),
 ):
-    """List all active employees for a platform."""
+    """All active employees for a platform. No caps, no gating."""
     employees = _fetch_employees(platform, department=department)
     _log_sync(platform, len(employees))
-    return employees  # bare list — same as original
+    return employees
 
 
 @router.get("/tiers")
 async def list_tiers():
-    """List all available tier packs. PRESERVED from original."""
-    return TIER_PACKS
+    """Display-only tier metadata. NOT an access gate."""
+    return TIER_DISPLAY_META
 
 
 @router.get("/tiers/{tier_name}/coverage")
@@ -140,30 +136,22 @@ async def tier_coverage(
     tier_name: str,
     platform: str = Query("automation-nation"),
 ):
-    """Coverage analysis for a named tier. PRESERVED from original."""
-    if tier_name not in TIER_PACKS:
+    """Which employees are *suggested* for this tier based on tier_access metadata.
+    Platforms use this to build their pricing pages. NOT an access gate.
+    """
+    if tier_name not in TIER_DISPLAY_META:
         raise HTTPException(status_code=404, detail=f"Tier '{tier_name}' not found")
 
+    allowed_access_values = TIER_ACCESS_DISPLAY.get(tier_name, [])
     all_employees = _fetch_employees(platform)
-    allowed = TIER_ACCESS_MAP
-
-    tier_employees = [
-        e for e in all_employees
-        if tier_name in allowed.get(e.get("tier_access", "All"), [])
-    ]
-
-    departments: dict = {}
-    for emp in tier_employees:
-        dept = emp.get("department_label", emp.get("department", "Other"))
-        departments.setdefault(dept, []).append(emp["name"])
+    suggested = [e for e in all_employees if e.get("tier_access") in allowed_access_values]
 
     return {
         "tier": tier_name,
-        "tier_info": TIER_PACKS[tier_name],
-        "employee_count": len(tier_employees),
-        "employees": tier_employees,
-        "department_coverage": departments,
-        "gaps": _identify_gaps(departments),
+        "tier_info": TIER_DISPLAY_META[tier_name],
+        "suggested_count": len(suggested),
+        "suggested_employees": suggested,
+        "department_coverage": _group_by_department(suggested),
     }
 
 
@@ -172,20 +160,15 @@ async def custom_coverage(
     employee_ids: List[str],
     platform: str = Query("automation-nation"),
 ):
-    """Coverage for a custom employee set. PRESERVED from original."""
+    """Department coverage analysis for an arbitrary employee set."""
     all_employees = _fetch_employees(platform)
     selected = [e for e in all_employees if e["id"] in employee_ids]
-
-    departments: dict = {}
-    for emp in selected:
-        dept = emp.get("department_label", emp.get("department", "Other"))
-        departments.setdefault(dept, []).append(emp["name"])
-
+    departments = _group_by_department(selected)
     return {
         "selected_count": len(selected),
         "employees": selected,
         "department_coverage": departments,
-        "gaps": _identify_gaps(departments),
+        "gaps": sorted(CORE_DEPARTMENTS - set(departments.keys())),
     }
 
 
@@ -201,7 +184,7 @@ class GeneratePromptRequest(BaseModel):
 
 @router.post("/generate-prompt")
 async def generate_prompt(req: GeneratePromptRequest):
-    """Claude-powered custom agent builder. PRESERVED — uses llm_call()."""
+    """Claude-powered custom agent prompt builder."""
     user_message = f"""Generate a professional AI employee system prompt for:
 Name: {req.employee_name}
 Role: {req.role}
@@ -222,7 +205,6 @@ and specify handoff behavior when requests fall outside scope."""
         agent_name="employees_generate_prompt",
         task_type="custom_agent_prompt",
     )
-
     return {
         "employee_name": req.employee_name,
         "role": req.role,
@@ -230,11 +212,9 @@ and specify handoff behavior when requests fall outside scope."""
     }
 
 
-# ── NEW ENDPOINTS ─────────────────────────────────────────────────────────
-
 @router.get("/csuite/all")
 async def get_csuite(platform: str = Query("automation-nation")):
-    """Get all C-suite agents. Used by orchestration layer."""
+    """All C-suite agents for a platform."""
     employees = _fetch_employees(platform)
     csuite = [e for e in employees if e.get("is_csuite")]
     return {"csuite": csuite, "total": len(csuite)}
@@ -252,10 +232,7 @@ async def sync_status(platform: str = Query("automation-nation")):
         .limit(1)
         .execute()
     )
-    return {
-        "platform": platform,
-        "last_sync": result.data[0] if result.data else None,
-    }
+    return {"platform": platform, "last_sync": result.data[0] if result.data else None}
 
 
 @router.get("/{employee_id}")
@@ -264,12 +241,12 @@ async def get_employee(
     platform: str = Query("automation-nation"),
     include_system_prompt: bool = Query(False),
 ):
-    """Get a single employee by ID."""
+    """Get a single employee by ID. Raises 404 if not subscribed to platform."""
     employees = _fetch_employees(platform, include_system_prompt=include_system_prompt)
     match = next((e for e in employees if e["id"] == employee_id), None)
     if not match:
         raise HTTPException(
             status_code=404,
-            detail=f"Employee '{employee_id}' not found for platform '{platform}'"
+            detail=f"Employee '{employee_id}' not found for platform '{platform}'",
         )
     return match
