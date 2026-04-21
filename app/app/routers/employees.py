@@ -1,10 +1,14 @@
 """
 Foundation API — Employees Router
-Supabase-backed. Storage + retrieval only. NO tier gating, NO caps, NO subscription
-enforcement. Each platform (AN, Assistmeo, VoiceMIO, Blast Video, MRLIN) is
-responsible for checking its own client subscriptions and serving accordingly.
+Storage + retrieval only. Foundation is a catalog, not a storefront.
 
-Foundation just stores the catalog. Platforms enforce.
+No tier gating, no count caps, no subscription enforcement. The tier_access
+column stays in the database as display metadata so platforms (AN, Assistmeo,
+VoiceMIO, Blast Video, MRLIN) can read it to build their own pricing pages —
+but Foundation never filters on it.
+
+Platforms own: subscription tracking, Stripe checkout, tier gating, display.
+Foundation owns: the catalog.
 """
 
 from fastapi import APIRouter, HTTPException, Query
@@ -15,33 +19,14 @@ from app.llm_router import llm_call, MODEL_MAP, TaskTier
 
 router = APIRouter(prefix="/employees", tags=["employees"])
 
-# ── DISPLAY-ONLY tier metadata. NEVER used to gate or cap.
-# Platforms read this from the API and use it to build their own pricing pages.
-# Foundation never enforces any of this.
-TIER_DISPLAY_META = {
-    "starter":      {"price": "$199/mo",   "suggested_count": 3,  "featured_departments": ["Sales"]},
-    "essentials":   {"price": "$299/mo",   "suggested_count": 6,  "featured_departments": ["Sales", "Marketing"]},
-    "professional": {"price": "$999/mo",   "suggested_count": 10, "featured_departments": ["Sales", "Marketing", "Operations"]},
-    "enterprise":   {"price": "$1,999/mo", "suggested_count": 26, "featured_departments": ["All"]},
-}
-
-# Maps tier_name → list of tier_access column values that should be
-# *suggested* at that marketing tier. DISPLAY-ONLY. Not a gate.
-TIER_ACCESS_DISPLAY = {
-    "starter":      ["All"],
-    "essentials":   ["All", "Essentials+"],
-    "professional": ["All", "Essentials+", "Professional+"],
-    "enterprise":   ["All", "Essentials+", "Professional+", "Enterprise"],
-}
-
-CORE_DEPARTMENTS = {
+CORE_DEPARTMENTS = frozenset({
     "Sales", "Marketing", "Operations",
     "People & Culture", "Legal & Strategy", "C-Suite",
-}
+})
 
 
 def _resolve_model(model_tier: str) -> str:
-    """Map model_tier column value to actual model ID via llm_router."""
+    """Map model_tier column ('orchestrator'/'standard'/'fast') to an actual model ID."""
     tier_map = {
         "orchestrator": TaskTier.COMPLEX,
         "standard":     TaskTier.STANDARD,
@@ -119,40 +104,10 @@ async def list_employees(
     platform: str = Query("automation-nation"),
     department: Optional[str] = Query(None),
 ):
-    """All active employees for a platform. No caps, no gating."""
+    """All active employees for a platform. No filtering beyond platform subscription."""
     employees = _fetch_employees(platform, department=department)
     _log_sync(platform, len(employees))
     return employees
-
-
-@router.get("/tiers")
-async def list_tiers():
-    """Display-only tier metadata. NOT an access gate."""
-    return TIER_DISPLAY_META
-
-
-@router.get("/tiers/{tier_name}/coverage")
-async def tier_coverage(
-    tier_name: str,
-    platform: str = Query("automation-nation"),
-):
-    """Which employees are *suggested* for this tier based on tier_access metadata.
-    Platforms use this to build their pricing pages. NOT an access gate.
-    """
-    if tier_name not in TIER_DISPLAY_META:
-        raise HTTPException(status_code=404, detail=f"Tier '{tier_name}' not found")
-
-    allowed_access_values = TIER_ACCESS_DISPLAY.get(tier_name, [])
-    all_employees = _fetch_employees(platform)
-    suggested = [e for e in all_employees if e.get("tier_access") in allowed_access_values]
-
-    return {
-        "tier": tier_name,
-        "tier_info": TIER_DISPLAY_META[tier_name],
-        "suggested_count": len(suggested),
-        "suggested_employees": suggested,
-        "department_coverage": _group_by_department(suggested),
-    }
 
 
 @router.post("/coverage")
@@ -160,7 +115,10 @@ async def custom_coverage(
     employee_ids: List[str],
     platform: str = Query("automation-nation"),
 ):
-    """Department coverage analysis for an arbitrary employee set."""
+    """Department coverage for a given set of employee IDs. Informational, not enforcing.
+    Useful for AN/Assistmeo to show a client what departments their selected
+    agents cover and where the gaps are.
+    """
     all_employees = _fetch_employees(platform)
     selected = [e for e in all_employees if e["id"] in employee_ids]
     departments = _group_by_department(selected)
@@ -214,7 +172,7 @@ and specify handoff behavior when requests fall outside scope."""
 
 @router.get("/csuite/all")
 async def get_csuite(platform: str = Query("automation-nation")):
-    """All C-suite agents for a platform."""
+    """All C-suite agents for a platform. Useful for orchestration."""
     employees = _fetch_employees(platform)
     csuite = [e for e in employees if e.get("is_csuite")]
     return {"csuite": csuite, "total": len(csuite)}
@@ -222,7 +180,7 @@ async def get_csuite(platform: str = Query("automation-nation")):
 
 @router.get("/sync/status")
 async def sync_status(platform: str = Query("automation-nation")):
-    """When did this platform last sync?"""
+    """Most recent sync log entry for a platform."""
     result = (
         supabase.schema("foundation")
         .table("employee_sync_log")
@@ -241,7 +199,7 @@ async def get_employee(
     platform: str = Query("automation-nation"),
     include_system_prompt: bool = Query(False),
 ):
-    """Get a single employee by ID. Raises 404 if not subscribed to platform."""
+    """Get a single employee by ID. 404 if not subscribed to platform."""
     employees = _fetch_employees(platform, include_system_prompt=include_system_prompt)
     match = next((e for e in employees if e["id"] == employee_id), None)
     if not match:
