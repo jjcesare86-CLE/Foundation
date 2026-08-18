@@ -26,11 +26,17 @@ CORE_DEPARTMENTS = frozenset({
 
 
 def _resolve_model(model_tier: str) -> str:
-    """Map model_tier column ('orchestrator'/'standard'/'fast') to an actual model ID."""
+    """Map model_tier column to an actual model ID.
+
+    'orchestrator' is the pre-Batch-1 legacy value, kept as an alias for
+    'complex' in case any row hasn't been migrated yet.
+    """
     tier_map = {
-        "orchestrator": TaskTier.COMPLEX,
-        "standard":     TaskTier.STANDARD,
-        "fast":         TaskTier.FAST,
+        "orchestrator":     TaskTier.COMPLEX,
+        "orchestrator_max": TaskTier.ORCHESTRATOR_MAX,
+        "complex":          TaskTier.COMPLEX,
+        "standard":         TaskTier.STANDARD,
+        "fast":             TaskTier.FAST,
     }
     task_tier = tier_map.get(model_tier, TaskTier.STANDARD)
     return MODEL_MAP.get(task_tier, MODEL_MAP[TaskTier.STANDARD])
