@@ -1,4 +1,9 @@
-from fastapi import FastAPI
+import os
+
+from fastapi import FastAPI, Depends, Security, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import APIKeyHeader
+
 from app.routers import skills, agents, brand, clients, templates, employees, voice_employee_builder, research
 from app.foundation_agents import router as agents_router
 from app.gemini_voice_proxy import router as voice_router
@@ -11,6 +16,47 @@ app = FastAPI(
     description="Shared API layer for Automation Nation, VoiceMIO, and Jubilant Careers",
     version="1.0.0",
 )
+
+# ── CORS ─────────────────────────────────────────────────────────────────
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "").split(",")
+# Fallback for dev: if empty, allow localhost
+if not ALLOWED_ORIGINS or ALLOWED_ORIGINS == [""]:
+    ALLOWED_ORIGINS = ["http://localhost:3000", "http://localhost:8080"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ── API key gate (internal/admin endpoints only) ────────────────────────
+API_KEY_HEADER = APIKeyHeader(name="X-Foundation-API-Key", auto_error=False)
+FOUNDATION_API_KEY = os.getenv("FOUNDATION_API_KEY")
+
+
+async def require_api_key(api_key: str = Security(API_KEY_HEADER)):
+    if not FOUNDATION_API_KEY:
+        # Key not configured = fail closed, not open
+        raise HTTPException(503, "API key not configured on server")
+    if api_key != FOUNDATION_API_KEY:
+        raise HTTPException(403, "Invalid API key")
+    return api_key
+
+
+# USAGE: add `dependencies=[Depends(require_api_key)]` to any router or
+# individual endpoint that should be protected. Public endpoints (like
+# /public/agents, /dock/bootstrap with its own JWT auth) stay open.
+# Example:
+#   app.include_router(admin_router, dependencies=[Depends(require_api_key)])
+#   app.include_router(ops_router, prefix="/ops", dependencies=[Depends(require_api_key)])
+#
+# NOTE: no /ops, /admin, /connections, /dock, or /public routers exist in
+# this codebase yet, so nothing is wired to this dependency below. When
+# those routers are built, gate /ops/* and /admin/* with
+# dependencies=[Depends(require_api_key)] and leave /connections/callback/*,
+# /dock/* (own JWT auth), /public/*, and /agents open, per spec.
 
 app.include_router(skills.router)
 app.include_router(agents.router)
