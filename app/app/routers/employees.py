@@ -11,11 +11,15 @@ Platforms own: subscription tracking, Stripe checkout, tier gating, display.
 Foundation owns: the catalog.
 """
 
+import logging
+
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 from typing import Optional, List
 from app.database import supabase
 from app.llm_router import llm_call, MODEL_MAP, TaskTier
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/employees", tags=["employees"])
 
@@ -90,6 +94,30 @@ def _group_by_department(employees: list) -> dict:
         dept = emp.get("department_label", emp.get("department", "Other"))
         groups.setdefault(dept, []).append(emp["name"])
     return groups
+
+
+def _resolve_legacy_slug(employee_id: str) -> Optional[str]:
+    """
+    If employee_id matches an ai_employees.legacy_slug (e.g. the pre-rename
+    'lydia-finance'), resolve to the current id and log a deprecation
+    warning. Returns None if no legacy_slug matches.
+    """
+    result = (
+        supabase.schema("foundation")
+        .table("ai_employees")
+        .select("id")
+        .eq("legacy_slug", employee_id)
+        .limit(1)
+        .execute()
+    )
+    if result.data:
+        current_id = result.data[0]["id"]
+        logger.warning(
+            f"DEPRECATED employee_id lookup: '{employee_id}' -> '{current_id}' "
+            f"(legacy_slug alias — update the caller)"
+        )
+        return current_id
+    return None
 
 
 def _log_sync(platform: str, count: int):
@@ -205,9 +233,14 @@ async def get_employee(
     platform: str = Query("automation-nation"),
     include_system_prompt: bool = Query(False),
 ):
-    """Get a single employee by ID. 404 if not subscribed to platform."""
+    """Get a single employee by ID. Resolves legacy slugs (e.g. pre-rename
+    'lydia-finance' -> 'joanna-finance'). 404 if not subscribed to platform."""
     employees = _fetch_employees(platform, include_system_prompt=include_system_prompt)
     match = next((e for e in employees if e["id"] == employee_id), None)
+    if not match:
+        resolved_id = _resolve_legacy_slug(employee_id)
+        if resolved_id:
+            match = next((e for e in employees if e["id"] == resolved_id), None)
     if not match:
         raise HTTPException(
             status_code=404,
