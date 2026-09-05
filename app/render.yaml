@@ -39,3 +39,15 @@ services:
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
+
+  - type: cron
+    name: zacchaeus-daily
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    schedule: "0 7 * * *"
+    startCommand: python scripts/zacchaeus_daily_cron.py
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false

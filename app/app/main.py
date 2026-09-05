@@ -4,7 +4,7 @@ from fastapi import FastAPI, Depends, Security, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import APIKeyHeader
 
-from app.routers import skills, brand, clients, templates, employees, voice_employee_builder, research, actions, rahab
+from app.routers import skills, brand, clients, templates, employees, voice_employee_builder, research, actions, rahab, zacchaeus
 from app.foundation_agents import router as agents_router
 from app.gemini_voice_proxy import router as voice_router
 from app.voice_edit.router import router as voice_edit_router
@@ -74,6 +74,7 @@ app.include_router(pricing_router)
 app.include_router(research.router)
 app.include_router(actions.router, dependencies=[Depends(require_api_key)])
 app.include_router(rahab.router, dependencies=[Depends(require_api_key)])
+app.include_router(zacchaeus.router, dependencies=[Depends(require_api_key)])
 
 @app.get("/health")
 def health():
