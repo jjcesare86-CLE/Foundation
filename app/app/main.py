@@ -4,12 +4,13 @@ from fastapi import FastAPI, Depends, Security, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import APIKeyHeader
 
-from app.routers import skills, brand, clients, templates, employees, voice_employee_builder, research, actions, rahab, zacchaeus
+from app.routers import skills, brand, clients, templates, employees, voice_employee_builder, research, actions, rahab, zacchaeus, silas
 from app.foundation_agents import router as agents_router
 from app.gemini_voice_proxy import router as voice_router
 from app.voice_edit.router import router as voice_edit_router
 from app.routers.pricing import pricing_router
 from app.rahab.action_types import register_rahab_actions
+from app.silas.action_types import register_silas_actions
 
 
 app = FastAPI(
@@ -60,6 +61,7 @@ async def require_api_key(api_key: str = Security(API_KEY_HEADER)):
 
 # Register each agent's action-library handlers before any request can hit them.
 register_rahab_actions()
+register_silas_actions()
 
 app.include_router(skills.router)
 app.include_router(brand.router)
@@ -75,6 +77,7 @@ app.include_router(research.router)
 app.include_router(actions.router, dependencies=[Depends(require_api_key)])
 app.include_router(rahab.router, dependencies=[Depends(require_api_key)])
 app.include_router(zacchaeus.router, dependencies=[Depends(require_api_key)])
+app.include_router(silas.router, dependencies=[Depends(require_api_key)])
 
 @app.get("/health")
 def health():
