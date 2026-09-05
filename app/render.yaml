@@ -69,3 +69,29 @@ services:
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
+
+  - type: cron
+    name: ops-audit-nightly
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    schedule: "0 4 * * *"
+    startCommand: python scripts/ops_audit_nightly_cron.py
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+
+  - type: cron
+    name: ops-audit-weekly-smoke
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    schedule: "15 4 * * 0"
+    startCommand: python scripts/ops_audit_weekly_smoke_cron.py
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false

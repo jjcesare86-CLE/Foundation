@@ -10,18 +10,25 @@ import sys
 sys.path.insert(0, ".")
 
 from app.rahab.ingestion import detect_spikes
+from app.ops.heartbeat import heartbeat
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("rahab_spike_check_cron")
 
+AGENT_SLUG, JOB_NAME = "rahab-reputation", "rahab-spike-check"
+
 
 def main() -> None:
-    spikes = detect_spikes()
-    if not spikes:
-        log.info("no spikes detected")
-        return
-    for spike in spikes:
-        log.warning(f"SPIKE client={spike['client_id']} count={spike['count']} window={spike['window_hours']}h")
+    try:
+        spikes = detect_spikes()
+        if not spikes:
+            log.info("no spikes detected")
+        for spike in spikes:
+            log.warning(f"SPIKE client={spike['client_id']} count={spike['count']} window={spike['window_hours']}h")
+        heartbeat(AGENT_SLUG, JOB_NAME, "success", f"spikes={len(spikes)}")
+    except Exception as e:
+        heartbeat(AGENT_SLUG, JOB_NAME, "failed", str(e))
+        raise
 
 
 if __name__ == "__main__":
