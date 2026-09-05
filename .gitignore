@@ -10,3 +10,6 @@ build/
 .DS_Store
 node_modules/
 .next/
+supabase/.temp/
+.unlazy/
+.unlazy-hook-state.json

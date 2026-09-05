@@ -16,5 +16,18 @@
       "Bash(find 'c:\\\\Users\\\\jjces\\\\OneDrive\\\\Desktop\\\\Claude Foundation\\\\foundation-org\\\\foundation-api' -type f -name *.py)",
       "Bash(find 'c:\\\\Users\\\\jjces\\\\OneDrive\\\\Desktop\\\\Claude Foundation\\\\foundation-org\\\\frontend\\\\app' -type f -name *.js -o -name *.jsx -o -name *.ts -o -name *.tsx)"
     ]
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"C:\\Program Files\\nodejs\\node.exe\" \"C:\\Users\\jjces\\OneDrive\\Desktop\\Foundation\\.agents\\skills\\unlazy\\scripts\\stop-hook.mjs\" --unlazy-hook-v2",
+            "timeout": 20
+          }
+        ]
+      }
+    ]
   }
 }

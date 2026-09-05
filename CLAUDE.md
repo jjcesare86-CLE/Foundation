@@ -17,3 +17,9 @@ Key routing rules:
 - Architecture review → invoke plan-eng-review
 - Save progress, checkpoint, resume → invoke checkpoint
 - Code quality, health check → invoke health
+
+## Unlazy — completion discipline for substantial work
+For any build task over ~30 minutes, invoke the unlazy skill with an
+appropriate tree depth (see docs/specs/UNLAZY_AND_PROOF_OF_WORK.md §1.4).
+Gates must be written before work begins. Never report a phase complete
+without its gates file showing N of N checked with real evidence lines.
