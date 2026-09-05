@@ -126,32 +126,82 @@ def audit_l4(agent: dict) -> dict:
     return {"pass": True, "reason": f"{len(jobs)} job(s) heartbeating on schedule"}
 
 
+def audit_receipts(agent_id: str) -> dict:
+    """Proof-of-Work integration (UNLAZY_AND_PROOF_OF_WORK.md §2.6): the
+    agent's last 10 completed actions (executed or simulated) must have
+    non-null evidence AND verification_status='verified'. A simulated
+    action can never satisfy this by design (verify_method='none',
+    verification_status='pending') -- an agent whose recent completions
+    are mostly simulated is correctly unverified, not falsely green."""
+    rows = (
+        supabase.schema("foundation").table("agent_actions")
+        .select("id,status,evidence,verification_status")
+        .eq("agent_id", agent_id)
+        .in_("status", ["executed", "simulated"])
+        .order("executed_at", desc=True)
+        .limit(10)
+        .execute().data
+    )
+    if not rows:
+        return {"pass": True, "reason": "no completed actions yet to check"}
+    unverified = [r["id"] for r in rows if r.get("verification_status") != "verified" or not r.get("evidence")]
+    if unverified:
+        return {"pass": False, "reason": f"{len(unverified)} of {len(rows)} recent completions not verified: {unverified[:3]}"}
+    return {"pass": True, "reason": f"all {len(rows)} recent completions verified"}
+
+
 def audit_l5(agent: dict) -> dict:
     tier = TIER_TO_TASKTIER.get(agent.get("model_tier"))
     if tier is None:
-        return {"pass": False, "reason": f"can't map model_tier={agent.get('model_tier')!r} to a TaskTier"}
-    expected_model = MODEL_MAP[tier]
-    try:
-        llm_call(
-            messages=[{"role": "user", "content": "Introduce yourself in one sentence and name your department."}],
-            tier=tier,
-            system=f"You are {agent.get('biblical_name', agent['id'])}, {agent.get('role', '')} in the {agent.get('department_label', '')} department.",
-            max_tokens=100,
-            project="foundation",
-            agent_name=agent["id"],
-            task_type="ops_audit:smoke",
-        )
-        return {"pass": True, "reason": f"smoke call succeeded, expected model {expected_model}"}
-    except Exception as e:
-        return {"pass": False, "reason": f"smoke call failed: {e}"}
+        smoke_pass, smoke_reason = False, f"can't map model_tier={agent.get('model_tier')!r} to a TaskTier"
+    else:
+        expected_model = MODEL_MAP[tier]
+        try:
+            llm_call(
+                messages=[{"role": "user", "content": "Introduce yourself in one sentence and name your department."}],
+                tier=tier,
+                system=f"You are {agent.get('biblical_name', agent['id'])}, {agent.get('role', '')} in the {agent.get('department_label', '')} department.",
+                max_tokens=100,
+                project="foundation",
+                agent_name=agent["id"],
+                task_type="ops_audit:smoke",
+            )
+            smoke_pass, smoke_reason = True, f"smoke call succeeded, expected model {expected_model}"
+        except Exception as e:
+            smoke_pass, smoke_reason = False, f"smoke call failed: {e}"
+
+    receipts = audit_receipts(agent["id"])
+    return {
+        "pass": smoke_pass and receipts["pass"],
+        "reason": f"smoke: {smoke_reason} | receipts: {receipts['reason']}",
+        "smoke_pass": smoke_pass,
+        "receipts_pass": receipts["pass"],
+    }
 
 
 def audit_agent(agent: dict, run_l5: bool = True) -> dict:
     l1, l2, l3, l4 = audit_l1(agent), audit_l2(agent), audit_l3(agent), audit_l4(agent)
-    l5 = audit_l5(agent) if run_l5 else {"pass": None, "reason": "skipped"}
+    l5 = audit_l5(agent) if run_l5 else {"pass": None, "reason": "skipped", "smoke_pass": None, "receipts_pass": None}
     layers = {"L1": l1, "L2": l2, "L3": l3, "L4": l4, "L5": l5}
-    all_pass = all(layers[k]["pass"] for k in ("L1", "L2", "L3", "L4")) and (l5["pass"] is not False)
-    status = "green" if all_pass and l5["pass"] is True else ("amber" if all_pass else "red")
+
+    base_pass = all(layers[k]["pass"] for k in ("L1", "L2", "L3", "L4"))
+    smoke_pass = l5.get("smoke_pass")
+    receipts_pass = l5.get("receipts_pass")
+
+    if not base_pass or smoke_pass is False:
+        # L1-4 failure or a genuinely unreachable agent -- red, same as before.
+        status = "red"
+    elif smoke_pass is None:
+        # L5 skipped entirely (e.g. no ANTHROPIC_API_KEY available) -- amber, same as before.
+        status = "amber"
+    elif receipts_pass is False:
+        # Reachable and responding normally, but recent completions aren't
+        # verified -- amber per §2.6: "a chatty agent that silently fails
+        # its side effects is worse than a dead one."
+        status = "amber"
+    else:
+        status = "green"
+
     return {"agent_id": agent["id"], "biblical_name": agent.get("biblical_name"), "status": status, "layers": layers}
 
 

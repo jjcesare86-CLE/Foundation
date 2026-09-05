@@ -6,6 +6,14 @@ when is_demo_mode() says to simulate — it writes a structured
 {"mode": "simulated", "would_have": ...} result and marks the row
 'simulated', never 'executed'. This never raises outward; approve_action
 calls it and stores whatever comes back, including failures.
+
+Proof-of-Work (UNLAZY_AND_PROOF_OF_WORK.md §2.2/§2.4): this module is
+where every action's completion claim gets a receipt, centrally, so no
+individual handler can skip it. A simulated action can never be
+'verified' — it gets verify_method='none', verification_status='pending'
+— that's the literal rule from the spec ("Broker methods that cannot
+verify must set verify_method='none' and verification_status='pending'
+— never 'verified'"), enforced here rather than trusted per-handler.
 """
 import logging
 from datetime import datetime, timezone
@@ -117,19 +125,51 @@ def execute_action(action_id: str) -> dict:
         result = {"mode": "simulated" if demo else "live", **raw}
         ok = result.get("ok", True)
         status = "simulated" if (demo and ok) else ("executed" if ok else "failed")
-        return _finalize(action_id, status, result=result, error=None if ok else result.get("detail"))
+        return _finalize(action_id, status, result=result, error=None if ok else result.get("detail"), demo=demo)
     except Exception as e:
         logger.exception(f"action {action_id} ({action_type}) execution failed")
-        return _finalize(action_id, "failed", error=str(e))
+        return _finalize(action_id, "failed", error=str(e), demo=demo)
 
 
-def _finalize(action_id: str, status: str, result: Optional[dict] = None, error: Optional[str] = None) -> dict:
-    update = {"status": status, "executed_at": datetime.now(timezone.utc).isoformat()}
+def _finalize(action_id: str, status: str, result: Optional[dict] = None, error: Optional[str] = None, demo: bool = False) -> dict:
+    now = datetime.now(timezone.utc).isoformat()
+    update = {"status": status, "executed_at": now}
     if result is not None:
         update["result"] = result
     update["error"] = error
+
+    # Proof-of-Work receipt fields — derived here, not trusted from the
+    # handler, so no action type can silently skip verification.
+    update["claimed_outcome"] = status
+    if demo:
+        # A simulated call never gets to claim it happened. verified_at
+        # stays unset -- there is nothing to timestamp.
+        update["verify_method"] = "none"
+        update["verification_status"] = "pending"
+        update["evidence"] = result
+    elif status == "executed":
+        update["verify_method"] = (result or {}).get("verify_method", "api_response")
+        update["verification_status"] = "verified"
+        update["evidence"] = _extract_evidence(result)
+        update["verified_at"] = now
+    elif status == "failed":
+        update["verify_method"] = "api_response"
+        update["verification_status"] = "failed"
+        update["evidence"] = _extract_evidence(result) if result else {"error": error}
+    # 'rejected' and other non-execution statuses don't touch these fields.
+
     updated = (
         supabase.schema("foundation").table("agent_actions")
         .update(update).eq("id", action_id).execute()
     )
     return updated.data[0]
+
+
+def _extract_evidence(result: Optional[dict]) -> Optional[dict]:
+    """Pulls the identifying fields out of a handler's result -- external
+    ids, status codes, counts -- and drops the noise (mode/ok/would_have)."""
+    if not result:
+        return None
+    noise = {"mode", "ok", "would_have", "detail"}
+    evidence = {k: v for k, v in result.items() if k not in noise}
+    return evidence or None
