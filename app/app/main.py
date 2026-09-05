@@ -11,6 +11,7 @@ from app.voice_edit.router import router as voice_edit_router
 from app.routers.pricing import pricing_router
 from app.rahab.action_types import register_rahab_actions
 from app.silas.action_types import register_silas_actions
+from app.switchboard.router import router as switchboard_router
 
 
 app = FastAPI(
@@ -84,6 +85,9 @@ app.include_router(ops.router, dependencies=[Depends(require_api_key)])
 # by the more generic /connections/{client_id} pattern.
 app.include_router(connections.router)
 app.include_router(connections.admin_router, dependencies=[Depends(require_api_key)])
+# Switchboard is public (browser-facing, on client sites) -- gated per-endpoint
+# by its own require_switchboard_auth dependency, not the internal API key.
+app.include_router(switchboard_router)
 
 @app.get("/health")
 def health():
