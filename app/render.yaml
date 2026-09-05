@@ -83,6 +83,24 @@ services:
         sync: false
 
   - type: cron
+    name: connections-health-nightly
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    schedule: "0 3 * * *"
+    startCommand: python scripts/connections_health_cron.py
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: CONNECTION_BROKER_ENCRYPTION_KEY
+        sync: false
+      - key: GOOGLE_OAUTH_CLIENT_ID
+        sync: false
+      - key: GOOGLE_OAUTH_CLIENT_SECRET
+        sync: false
+
+  - type: cron
     name: ops-audit-weekly-smoke
     runtime: python
     buildCommand: pip install -r requirements.txt
