@@ -1,0 +1,241 @@
+# =====================================================================
+# Foundation Layer · voice_edit · editable_fields.yaml
+#
+# Single source of truth for what voice can change, on which surface.
+# Anything NOT listed here is read-only via the voice/edit channel,
+# even if it's writable elsewhere in the API.
+#
+# Field schema:
+#   path           JSON Pointer into the target document (RFC 6901).
+#   aliases        Natural-language phrases the customer might say.
+#                  Used by the intent parser to disambiguate "the title".
+#   type           string | rich_text | url | color | enum | image | document | list[T]
+#   confirm        true → agent must read-back and get verbal "yes" before applying.
+#                  false → apply immediately and read result back.
+#   max_length     for strings.
+#   enum_values    for enum types.
+#   validator      named validator the edit_engine will run.
+#   post_hook      named background job to run after successful edit.
+# =====================================================================
+
+surfaces:
+
+  # -------------------------------------------------------------------
+  # BRAND PORTFOLIO  (shared — used during initial onboarding everywhere)
+  # -------------------------------------------------------------------
+  brand_portfolio:
+    target_table: business_profiles
+    target_column: brand_data           # JSONB column on business_profiles
+    fields:
+      business_name:
+        path: /business_name
+        aliases: ["business name", "company name", "the name of my business", "what we're called"]
+        type: string
+        max_length: 120
+        confirm: true                   # name change is consequential
+      tagline:
+        path: /tagline
+        aliases: ["tagline", "slogan", "motto"]
+        type: string
+        max_length: 160
+        confirm: false
+      industry:
+        path: /industry
+        aliases: ["industry", "what industry we're in", "vertical", "category"]
+        type: enum
+        enum_values_source: foundation.industries  # 45-vertical list
+        confirm: true
+      services:
+        path: /services
+        aliases: ["services", "what we offer", "service list", "what we do"]
+        type: list[string]
+        confirm: false
+      hours:
+        path: /hours
+        aliases: ["hours", "business hours", "when we're open", "operating hours"]
+        type: hours_block               # specialized validator
+        confirm: false
+        validator: business_hours
+      phone:
+        path: /contact/phone
+        aliases: ["phone", "phone number", "main phone", "business line"]
+        type: string
+        validator: e164_phone
+        confirm: true
+      email:
+        path: /contact/email
+        aliases: ["email", "contact email", "business email"]
+        type: string
+        validator: email
+        confirm: true
+      address:
+        path: /contact/address
+        aliases: ["address", "location", "where we are", "physical address"]
+        type: address_block
+        validator: postal_address
+        confirm: true
+      logo:
+        path: /assets/logo
+        aliases: ["logo", "our logo", "company logo"]
+        type: image
+        post_hook: generate_logo_variants   # favicon, dark/light, sizes
+        confirm: false
+      brand_colors:
+        path: /brand/colors
+        aliases: ["brand colors", "company colors", "color palette", "our colors"]
+        type: color_palette
+        confirm: false
+      voice_persona:
+        path: /brand/voice_persona
+        aliases: ["voice", "tone", "how we sound", "brand voice", "personality"]
+        type: enum
+        enum_values: [friendly, professional, energetic, authoritative, warm, playful, technical]
+        confirm: false
+
+  # -------------------------------------------------------------------
+  # WEBSITE BUILDER  (Automation Nation site builder)
+  # -------------------------------------------------------------------
+  website:
+    target_table: website_drafts
+    target_column: content
+    fields:
+      hero_headline:
+        path: /hero/headline
+        aliases: ["headline", "hero text", "main headline", "the big text at the top", "homepage headline"]
+        type: string
+        max_length: 100
+        confirm: false
+      hero_subheadline:
+        path: /hero/subheadline
+        aliases: ["subheadline", "subtitle", "the text under the headline"]
+        type: string
+        max_length: 200
+        confirm: false
+      hero_cta_label:
+        path: /hero/cta/label
+        aliases: ["the button", "call to action", "CTA button", "main button text"]
+        type: string
+        max_length: 32
+        confirm: false
+      hero_image:
+        path: /hero/image
+        aliases: ["hero image", "main image", "the picture at the top"]
+        type: image
+        confirm: false
+      about_text:
+        path: /sections/about/body
+        aliases: ["about text", "about section", "about us"]
+        type: rich_text
+        max_length: 2000
+        confirm: false
+      services_list:
+        path: /sections/services/items
+        aliases: ["services", "services list", "what we offer section"]
+        type: list[service_card]
+        confirm: false
+      testimonials:
+        path: /sections/testimonials/items
+        aliases: ["testimonials", "reviews section", "customer quotes"]
+        type: list[testimonial]
+        confirm: false
+      footer_address:
+        path: /footer/address
+        aliases: ["footer address", "address at the bottom"]
+        type: address_block
+        confirm: false
+      theme_primary_color:
+        path: /theme/colors/primary
+        aliases: ["primary color", "main color", "accent color"]
+        type: color
+        confirm: false
+      theme_font:
+        path: /theme/typography/font
+        aliases: ["font", "typography", "font family"]
+        type: enum
+        enum_values: [inter, manrope, satoshi, playfair, "ibm-plex", lora]
+        confirm: false
+
+  # -------------------------------------------------------------------
+  # VOICE AGENT PROMPT  (VoiceMIO / VAPI agent customization)
+  # -------------------------------------------------------------------
+  voice_agent_prompt:
+    target_table: voice_agents
+    target_column: config
+    fields:
+      greeting:
+        path: /greeting
+        aliases: ["greeting", "the way it answers", "opening line", "hello message"]
+        type: string
+        max_length: 240
+        confirm: true                   # agent persona is high-stakes
+      persona_tone:
+        path: /persona/tone
+        aliases: ["tone", "how it sounds", "personality", "vibe"]
+        type: enum
+        enum_values: [friendly, professional, energetic, authoritative, warm, playful]
+        confirm: true
+      voice_id:
+        path: /voice_id
+        aliases: ["voice", "voice actor", "which voice", "speaker"]
+        type: enum
+        enum_values_source: voicemio.elevenlabs_voices
+        confirm: true
+      transfer_extensions:
+        path: /transfers
+        aliases: ["transfers", "where it transfers calls", "call routing"]
+        type: list[transfer_rule]
+        confirm: true
+        validator: e164_phone_list
+      knowledge_entries:
+        path: /knowledge
+        aliases: ["knowledge", "what it knows", "facts", "info it should know"]
+        type: list[kb_entry]
+        confirm: false
+
+  # -------------------------------------------------------------------
+  # SOCIAL BRAND LAUNCHER  (AN add-on)
+  # -------------------------------------------------------------------
+  social_brand_launcher:
+    target_table: social_brand_configs
+    target_column: config
+    fields:
+      handles:
+        path: /handles
+        aliases: ["social handles", "usernames", "instagram handle", "tiktok handle"]
+        type: object
+        confirm: true
+      bio:
+        path: /bio
+        aliases: ["bio", "social bio", "profile bio"]
+        type: string
+        max_length: 240
+        confirm: false
+      profile_image:
+        path: /profile_image
+        aliases: ["profile picture", "avatar", "profile image", "headshot"]
+        type: image
+        post_hook: generate_social_avatars
+        confirm: false
+      content_pillars:
+        path: /content_pillars
+        aliases: ["content pillars", "content themes", "what we post about"]
+        type: list[string]
+        confirm: false
+
+# =====================================================================
+# Validator registry — names referenced above. Implementations live in
+# voice_edit/validators.py (added in a follow-up file alongside post_hooks).
+# =====================================================================
+validators:
+  - business_hours          # parses "9 to 5 weekdays" etc.
+  - e164_phone              # +14155551234 format
+  - e164_phone_list         # list of phones
+  - email                   # RFC 5322 + DNS check (light)
+  - postal_address          # uses Google Places API to canonicalize
+  - color_hex               # #RRGGBB
+
+post_hooks:
+  - generate_logo_variants    # favicon + dark/light + 5 sizes
+  - generate_social_avatars   # IG/TikTok/LI/X cropped variants
+  - reindex_voice_agent       # rebuild VAPI assistant with new prompt
+  - rebuild_website_preview   # regenerate Next.js preview build

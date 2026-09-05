@@ -4,7 +4,7 @@ from fastapi import FastAPI, Depends, Security, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import APIKeyHeader
 
-from app.routers import skills, agents, brand, clients, templates, employees, voice_employee_builder, research
+from app.routers import skills, brand, clients, templates, employees, voice_employee_builder, research
 from app.foundation_agents import router as agents_router
 from app.gemini_voice_proxy import router as voice_router
 from app.voice_edit.router import router as voice_edit_router
@@ -56,10 +56,9 @@ async def require_api_key(api_key: str = Security(API_KEY_HEADER)):
 # this codebase yet, so nothing is wired to this dependency below. When
 # those routers are built, gate /ops/* and /admin/* with
 # dependencies=[Depends(require_api_key)] and leave /connections/callback/*,
-# /dock/* (own JWT auth), /public/*, and /agents open, per spec.
+# /dock/* (own JWT auth), and /public/* open, per spec.
 
 app.include_router(skills.router)
-app.include_router(agents.router)
 app.include_router(brand.router)
 app.include_router(clients.router)
 app.include_router(templates.router)
