@@ -1,0 +1,16 @@
+# DECISIONS — append-only
+- 2026-07-06: Fable tier for Solomon only (Option A); Option B (full C-suite on Fable) staged as a single env-var flip `MODEL_COMPLEX`.
+- 2026-07-06: Eight new resellable agents specced; build in three batches (Rahab/Zacchaeus/Silas → Obadiah/Bezalel/Priscilla → Amos/Tabitha).
+- 2026-07-08: Finance & Invoicing agent renamed Joanna (biblical_name); product_name stays Lydia. Shopify agent keeps Lydia. (Found already applied in DB on 2026-09-01.)
+- 2026-07-08: Connections Hub rides GHL's approved social OAuth apps in v1; no custom Meta/TikTok apps.
+- 2026-07-08: Token encryption = app-level Fernet, key in Render env only. Not pgcrypto.
+- 2026-08-22: Unlazy adopted as dev standard, per-project on Foundation first. Proof-of-Work receipt standard adopted for all runtime agents; Eden exempt from receipt logging.
+- 2026-09-01: Voice retention — transcripts kept indefinitely; raw audio hard-deleted at 30 days, client-adjustable downward only.
+- 2026-09-01: Live two-way PTT approved; app ships as customer-facing software (one Foundation app, tenant at login); pricing $99 base + $12/seat + $19/channel on top of $149 platform.
+- 2026-09-01: Product name = **Switchboard**. AIM rejected on trademark risk with full knowledge of the mark's status. Nostalgia goes in the marketing, not the trademark.
+- 2026-09-01: The 26-agent catalog is `foundation.ai_employees` in project rhtwtoinmiekttvunlzs. `public.ai_employees` in the AN database is a homepage display table and is out of scope.
+- 2026-09-02: Fable 5.1 (`claude-fable-5-1`) replaces Fable 5 in all specs. Sonnet 5 (`claude-sonnet-5`) becomes the `standard` tier.
+- 2026-09-02: Caleb becomes Chief Information Security Officer (C-suite, complex tier). Nehemiah added as COO. Ezra stays Tech & IT and reports to Caleb. Security page = caleb.automaitionnation.com. Open: whether the AN homepage "Ask Caleb" button moves to Nehemiah.
+- 2026-09-04: Conversation discipline is a hard rule for every agent — greetings/acks never resolve an open item; agents restate open questions; humans are never answered for. Tests block the build. See 05_CONVERSATION_DISCIPLINE.md.
+- 2026-09-05: The Aug 18 "migration drift" (20260818193841/193842/195000) and item A's CORS/API-key/Fernet code were both work from an earlier session that used a different local clone (`Claude Foundation`, never pushed until today). Not mysterious, not duplicate work — reconciled onto `batch1-expansion` (pushed to origin) in this session. `/agents` returning 500 is not a schema-exposure bug (verified: both anon and service-role keys read `foundation.*` fine); it's a separate, unrelated, low-priority route (`foundation.agents`, one scaffold row) with a likely-stale Render env var, not the roster endpoint. `/employees/` is and was the real roster route, already 200. See 00_STATE §5/§9.
+- 2026-09-05: Phase 0.5 (Caleb → CISO, Nehemiah → COO) shipped. Delilah (`ori`) and Leah (`leah-exec-asst`) — not named in the 0.5 spec's report-line list — were moved from Caleb to Nehemiah on the same "COO-line reports follow the new COO" logic applied to Joseph and Martha. Flagged for John to confirm, not blocking.
