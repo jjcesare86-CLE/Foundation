@@ -9,8 +9,8 @@ Runtime copy:       app/app/llm_router.py (kept in sync)
 Env vars needed: ANTHROPIC_API_KEY, MODEL_FAST, MODEL_STANDARD, MODEL_COMPLEX,
                   MODEL_ORCH_MAX, MODEL_LONGCTX (optional overrides)
 
-# ENTERPRISE FLIP: set MODEL_COMPLEX=claude-fable-5 in Render to move the
-# full C-suite to Fable 5. See docs/specs/FOUNDATION_BATCH1... Part 0.1.
+# ENTERPRISE FLIP: set MODEL_COMPLEX=claude-fable-5-1 in Render to move the
+# full C-suite to Fable 5.1. See docs/specs/FOUNDATION_BATCH1... Part 0.1.
 """
 
 import os
@@ -28,9 +28,9 @@ class TaskTier(str, Enum):
     FAST              = "fast"               # classify, tag, route, yes/no  → Haiku
     STANDARD          = "standard"           # draft, analyze, code, respond  → Sonnet
     COMPLEX           = "complex"            # bounded C-suite workloads      → Opus
-    ORCHESTRATOR_MAX  = "orchestrator_max"   # Solomon + cross-agent escalations → Fable 5
+    ORCHESTRATOR_MAX  = "orchestrator_max"   # Solomon + cross-agent escalations → Fable 5.1
     VOICE             = "voice"              # real-time audio agents         → Gemini 3.1 Flash Live
-    LONGCTX           = "longctx"            # >100k token, Claude-native     → Fable 5 (1M ctx)
+    LONGCTX           = "longctx"            # >100k token, Claude-native     → Fable 5.1 (1M ctx)
 
 # Tiers that require prompt caching — the router refuses uncached calls on these.
 CACHE_REQUIRED_TIERS = {TaskTier.COMPLEX, TaskTier.ORCHESTRATOR_MAX}
@@ -39,16 +39,16 @@ CACHE_REQUIRED_TIERS = {TaskTier.COMPLEX, TaskTier.ORCHESTRATOR_MAX}
 
 MODEL_MAP: dict[TaskTier, str] = {
     TaskTier.FAST:             os.getenv("MODEL_FAST",     "claude-haiku-4-5-20251001"),
-    TaskTier.STANDARD:         os.getenv("MODEL_STANDARD", "claude-sonnet-4-6"),
+    TaskTier.STANDARD:         os.getenv("MODEL_STANDARD", "claude-sonnet-5"),
     TaskTier.COMPLEX:          os.getenv("MODEL_COMPLEX",  "claude-opus-4-8"),
-    TaskTier.ORCHESTRATOR_MAX: os.getenv("MODEL_ORCH_MAX", "claude-fable-5"),
+    TaskTier.ORCHESTRATOR_MAX: os.getenv("MODEL_ORCH_MAX", "claude-fable-5-1"),
     TaskTier.VOICE:            os.getenv("MODEL_VOICE",    "gemini-3.1-flash-live"),
-    TaskTier.LONGCTX:          os.getenv("MODEL_LONGCTX",  "claude-fable-5"),
+    TaskTier.LONGCTX:          os.getenv("MODEL_LONGCTX",  "claude-fable-5-1"),
 }
 
-# The model string that a fable-5 safeguard-flagged call reroutes to, billed
-# at that model's rates. Resolved from whatever currently maps to fable-5 —
-# not hardcoded to a tier — so the Enterprise flip (MODEL_COMPLEX=claude-fable-5)
+# The model string that a fable-5.1 safeguard-flagged call reroutes to, billed
+# at that model's rates. Resolved from whatever currently maps to fable-5.1 —
+# not hardcoded to a tier — so the Enterprise flip (MODEL_COMPLEX=claude-fable-5-1)
 # keeps working without touching this.
 FALLBACK_MODEL = os.getenv("MODEL_FABLE_FALLBACK", "claude-opus-4-8")
 
@@ -57,10 +57,12 @@ FALLBACK_MODEL = os.getenv("MODEL_FABLE_FALLBACK", "claude-opus-4-8")
 # to 10% of "input" when not given explicitly.
 PRICING_PER_1M: dict[str, dict] = {
     "claude-haiku-4-5-20251001": {"input": 0.80,   "output": 4.00},
-    "claude-sonnet-4-6":         {"input": 3.00,   "output": 15.00},
+    "claude-sonnet-4-6":         {"input": 3.00,   "output": 15.00},   # legacy — kept for cost lookups on old llm_usage rows
+    "claude-sonnet-5":           {"input": 2.00,   "output": 10.00},
     "claude-opus-4-6":           {"input": 15.00,  "output": 75.00},   # legacy — kept for cost lookups on old llm_usage rows
     "claude-opus-4-8":           {"input": 5.00,   "output": 25.00,  "cache_input": 0.50},
-    "claude-fable-5":            {"input": 10.00,  "output": 50.00,  "cache_input": 1.00},
+    "claude-fable-5":            {"input": 10.00,  "output": 50.00,  "cache_input": 1.00},   # legacy — kept for cost lookups on old llm_usage rows
+    "claude-fable-5-1":          {"input": 10.00,  "output": 50.00,  "cache_input": 0.25},   # cache reads 2.5% of input, not 10%
     "gemini-3.1-flash-live":     {"input": 0.50,   "output": 1.50},   # estimate — verify
     "gemini-3.1-pro":            {"input": 2.50,   "output": 10.00},  # estimate — verify
 }
@@ -158,15 +160,15 @@ def llm_call(
 
 def _create_with_fallback(client, model, max_tokens, system_param, messages):
     """
-    Wraps messages.create() with the Anthropic Fallback API for fable-5
+    Wraps messages.create() with the Anthropic Fallback API for fable-5.1
     calls: safeguard-flagged (bio/cyber) requests reroute to FALLBACK_MODEL
     and bill at its rates. NOTE: this targets whatever currently resolves
-    to "claude-fable-5" — verify the exact Fallback API request/response
+    to "claude-fable-5-1" — verify the exact Fallback API request/response
     shape against current Anthropic SDK docs before relying on this in
     production; the SDK surface for this is newer than what these
     comments were written against.
     """
-    if model != "claude-fable-5":
+    if model != "claude-fable-5-1":
         return client.messages.create(
             model=model,
             max_tokens=max_tokens,
