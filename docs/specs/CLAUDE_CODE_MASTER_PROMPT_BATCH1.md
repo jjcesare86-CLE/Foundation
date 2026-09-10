@@ -1,5 +1,5 @@
 # CLAUDE CODE — MASTER PROMPT, BATCH 1 (item B)
-**Prerequisite: Phase 0 green (`/agents` returns 26) and item A merged.**
+**Prerequisite: Phase 0 green (`/employees/` returns 26) and item A merged.**
 Paste `01_PROJECT_REF_CORRECTION.md` first, then everything below the line.
 
 ---
@@ -67,7 +67,7 @@ PHASE 1 — JOANNA (VERIFY ONLY — already done in the database)
   'Lydia' wherever product_name is what's displayed. The Shopify LYDIA agent
   is a different product — leave it alone.
 VERIFY: grep shows no finance-context "Lydia" where biblical_name is meant;
-/agents returns Joanna in finance.
+/employees/ returns Joanna in finance.
 
 PHASE 2 — AGENT 28: RAHAB (build FIRST — creates the shared action library)
 - Execute Sprint R from the Batch 1 doc: ai_employees row (00_STATE §4
@@ -79,7 +79,7 @@ PHASE 2 — AGENT 28: RAHAB (build FIRST — creates the shared action library)
   action-library spec for reuse), GHL review ingestion cron, Haiku draft
   pipeline with the tone matrix, post-approval publishing, review-request
   automation, nightly spike detection. Seed client: Bakerellas.
-VERIFY: /agents count = 28 with rahab active; insert a fake 3-star review row,
+VERIFY: /employees/ count = 28 with rahab active; insert a fake 3-star review row,
 the cron drafts a response, it appears in the approval inbox, approving flips
 status to posted (mock the GHL publish call in test mode).
 
@@ -92,7 +92,7 @@ PHASE 3 — AGENT 27: ZACCHAEUS
   <0.7-confidence clarification queue, daily cron (deadline reminders
   T-30/7/1, 1099 sweep, anomaly flags). Seed clients: Delivered Fireworks and
   LUTS; backfill 90 days of Stripe.
-VERIFY: /agents count = 29; one categorization batch runs end-to-end on real
+VERIFY: /employees/ count = 29; one categorization batch runs end-to-end on real
 backfilled rows; the four federal quarterly dates are seeded per client;
 llm_usage shows zacchaeus rows with costs.
 
@@ -110,7 +110,7 @@ PHASE 4 — AGENT 29: SILAS (implements HyperSchedule Phase 1)
   approve_reschedule action type (reuses the Phase 2 inbox), completion hook
   (done → Rahab review request + Joanna invoicing notify), nightly owner
   recap. Seed: Exterior Rescue WNY with 2 demo crews + 8 demo jobs.
-VERIFY: /agents count = 29; one full simulated dispatch cycle (build → run
+VERIFY: /employees/ count = 29; one full simulated dispatch cycle (build → run
 sheets → force one job late → slip alert → complete a job → Rahab request +
 Joanna notify created); two concurrent claim_slot() calls on one slot —
 exactly one wins.
@@ -121,7 +121,7 @@ PHASE 5 — ROSTER INTEGRITY SWEEP
 - employee_platform_subscriptions rows exist for the three new agents on
   every platform slug the original 26 have.
 - Frontend roster components in this repo render the count dynamically.
-VERIFY: /agents and /public/agents both return 30 active; frontend builds
+VERIFY: /employees/ returns 30 active; frontend builds
 clean.
 
 PHASE 6 — QA + SHIP
@@ -130,7 +130,7 @@ PHASE 6 — QA + SHIP
   env vars in play, seeded clients, anything deferred, the exact Enterprise
   flip instruction. Update docs/state/CURRENT.md and DECISIONS.md.
 - Merge batch1-expansion → main; confirm Render deploy goes green.
-VERIFY: production /agents returns 30; one live smoke call per new agent
+VERIFY: production /employees/ returns 30; one live smoke call per new agent
 logs to llm_usage.
 
 When Phase 6 is green, report completion and WAIT. Batches 2 and 3 (Obadiah,

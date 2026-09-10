@@ -56,7 +56,7 @@ grant select on all tables in schema foundation to anon, authenticated, service_
 grant select on all sequences in schema foundation to anon, authenticated, service_role;
 alter default privileges in schema foundation grant select on tables to anon, authenticated, service_role;
 ```
-3. PowerShell: `try { (Invoke-WebRequest "https://foundation-api-9gpl.onrender.com/agents").StatusCode } catch { $_.Exception.Response.StatusCode }` → expect 200. If still 500, run `select platform_slug, count(*) from foundation.employee_platform_subscriptions where is_active group by 1;` — an empty table is the other cause; seed it per §0.1.
+3. PowerShell: `try { (Invoke-WebRequest "https://foundation-api-9gpl.onrender.com/employees/").StatusCode } catch { $_.Exception.Response.StatusCode }` → expect 200. If still 500, run `select platform_slug, count(*) from foundation.employee_platform_subscriptions where is_active group by 1;` — an empty table is the other cause; seed it per §0.1.
 4. `Get-Content "C:\Users\jjces\OneDrive\Desktop\AN-repo\supabase\.temp\project-ref"` → if it says `rhtwtoinmiekttvunlzs`, `cd` into AN-repo and `supabase link --project-ref rzsryxvlaezfvftqpvbx`.
 5. `Rename-Item "C:\Users\jjces\OneDrive\Desktop\Foundation_Scaffold" "ZZ_old_scaffold"`
 6. Render → foundation-api-9gpl → Environment: `MODEL_ORCH_MAX=claude-fable-5-1`, `MODEL_COMPLEX=claude-opus-4-8`, `MODEL_STANDARD=claude-sonnet-5`, `MODEL_COMPLEX_ENTERPRISE=claude-fable-5-1`.
@@ -152,14 +152,14 @@ introspection, no secrets). Read docs/specs/04_ROSTER_CHANGE_CALEB_SECURITY.md.
    John decides.
 4. Update docs/specs/00_STATE_OF_THE_BUILD.md §2 (roster table) and
    docs/state/DECISIONS.md in the same commit.
-VERIFY: /agents returns 27; Caleb's row shows the CISO role and a
+VERIFY: /employees/ returns 27; Caleb's row shows the CISO role and a
 security-specific system_prompt; Nehemiah resolves to claude-opus-4-8 in a
 dry run; Ezra's reports_to is Caleb; the ops-audit L1 check (once D exists)
 shows both rows complete.
 ```
 
 **Done when**
-- `/agents` returns 200 with 26 rows, then **27** after the roster change below
+- `/employees/` returns 200 with 26 rows, then **27** after the roster change below
 - `supabase migration list` shows Local and Remote in agreement
 - Unit test passes; a dry-run Solomon call logs `claude-fable-5-1` in `llm_usage`
 - AN-repo's project-ref reads `rzsryxvlaezfvftqpvbx`
@@ -181,7 +181,7 @@ Foundation repo, branch security-foundations. Tasks:
    middleware with ALLOWED_ORIGINS from env (fallback to localhost for dev)
    per docs/specs/FOUNDATION_FIXES_GUIDE.md Step 1. Add the API key gate
    (X-Foundation-API-Key header, require_api_key dependency) and apply it
-   to /ops/* and /admin/* routers. Leave /public/*, /agents, /switchboard/*,
+   to /ops/* and /admin/* routers. Leave /public/*, /employees/, /switchboard/*,
    and /connections/callback/* unprotected (they have their own auth or
    are intentionally public).
 
@@ -201,7 +201,7 @@ Foundation repo, branch security-foundations. Tasks:
 
 **Done when**
 - CORS preflight from automaitionnation.com returns the allow-origin header
-- `/ops/agent-health` without the key → 403; with it → 200; `/agents` open → 200
+- `/ops/agent-health` without the key → 403; with it → 200; `/employees/` open → 200
 - Service refuses to boot if `CONNECTION_BROKER_ENCRYPTION_KEY` is missing (test by unsetting locally)
 
 
@@ -279,7 +279,7 @@ PHASE 1 — JOANNA (VERIFY ONLY — already done in the database)
   'Lydia' wherever product_name is what's displayed. The Shopify LYDIA agent
   is a different product — leave it alone.
 VERIFY: grep shows no finance-context "Lydia" where biblical_name is meant;
-/agents returns Joanna in finance.
+/employees/ returns Joanna in finance.
 
 PHASE 2 — AGENT 28: RAHAB (build FIRST — creates the shared action library)
 - Execute Sprint R from the Batch 1 doc: ai_employees row (00_STATE §4
@@ -291,7 +291,7 @@ PHASE 2 — AGENT 28: RAHAB (build FIRST — creates the shared action library)
   action-library spec for reuse), GHL review ingestion cron, Haiku draft
   pipeline with the tone matrix, post-approval publishing, review-request
   automation, nightly spike detection. Seed client: Bakerellas.
-VERIFY: /agents count = 28 with rahab active; insert a fake 3-star review row,
+VERIFY: /employees/ count = 28 with rahab active; insert a fake 3-star review row,
 the cron drafts a response, it appears in the approval inbox, approving flips
 status to posted (mock the GHL publish call in test mode).
 
@@ -304,7 +304,7 @@ PHASE 3 — AGENT 27: ZACCHAEUS
   <0.7-confidence clarification queue, daily cron (deadline reminders
   T-30/7/1, 1099 sweep, anomaly flags). Seed clients: Delivered Fireworks and
   LUTS; backfill 90 days of Stripe.
-VERIFY: /agents count = 29; one categorization batch runs end-to-end on real
+VERIFY: /employees/ count = 29; one categorization batch runs end-to-end on real
 backfilled rows; the four federal quarterly dates are seeded per client;
 llm_usage shows zacchaeus rows with costs.
 
@@ -322,7 +322,7 @@ PHASE 4 — AGENT 29: SILAS (implements HyperSchedule Phase 1)
   approve_reschedule action type (reuses the Phase 2 inbox), completion hook
   (done → Rahab review request + Joanna invoicing notify), nightly owner
   recap. Seed: Exterior Rescue WNY with 2 demo crews + 8 demo jobs.
-VERIFY: /agents count = 29; one full simulated dispatch cycle (build → run
+VERIFY: /employees/ count = 29; one full simulated dispatch cycle (build → run
 sheets → force one job late → slip alert → complete a job → Rahab request +
 Joanna notify created); two concurrent claim_slot() calls on one slot —
 exactly one wins.
@@ -333,7 +333,7 @@ PHASE 5 — ROSTER INTEGRITY SWEEP
 - employee_platform_subscriptions rows exist for the three new agents on
   every platform slug the original 26 have.
 - Frontend roster components in this repo render the count dynamically.
-VERIFY: /agents and /public/agents both return 30 active; frontend builds
+VERIFY: /employees/ returns 30 active; frontend builds
 clean.
 
 PHASE 6 — QA + SHIP
@@ -342,7 +342,7 @@ PHASE 6 — QA + SHIP
   env vars in play, seeded clients, anything deferred, the exact Enterprise
   flip instruction. Update docs/state/CURRENT.md and DECISIONS.md.
 - Merge batch1-expansion → main; confirm Render deploy goes green.
-VERIFY: production /agents returns 30; one live smoke call per new agent
+VERIFY: production /employees/ returns 30; one live smoke call per new agent
 logs to llm_usage.
 
 When Phase 6 is green, report completion and WAIT. Batches 2 and 3 (Obadiah,
@@ -351,7 +351,7 @@ begin them on your own.
 ```
 
 **Done when**
-- `/agents` = 30; Phase 6 completion report written; Render green
+- `/employees/` = 30; Phase 6 completion report written; Render green
 - Rahab's approval inbox works end to end; `claim_slot()` concurrency test passes
 
 
@@ -541,7 +541,7 @@ BATCH 2 (one phase per agent, verify gate between each):
              Tables pr_sops, pr_courses, pr_quizzes. Turns interview-engine
              transcripts into SOPs, onboarding curricula, quizzes; per-client
              process wiki. Handoffs: delilah (HR), leah.
-VERIFY after Batch 2: /agents = 33.
+VERIFY after Batch 2: /employees/ = 33.
 
 BATCH 3:
   AMOS     — Compliance & License Tracker, department legal, FAST tier for
@@ -553,7 +553,7 @@ BATCH 3:
              Tables tb_donors, tb_grants, tb_appeals. Donor CRM, grant deadline
              tracking + drafts, receipts, appeals, board reports. Handoffs:
              esther, joanna, elijah.
-VERIFY after Batch 3: /agents = 35; every new agent has a green L1–L5 row on the
+VERIFY after Batch 3: /employees/ = 35; every new agent has a green L1–L5 row on the
 ops board (/ops/agent-health); PROOF OF WORK block present in all five prompts.
 
 Update docs/state/CURRENT.md and DECISIONS.md; write
@@ -561,7 +561,7 @@ docs/specs/BATCH2_3_COMPLETION_REPORT.md. Merge to main; confirm Render green.
 ```
 
 **Done when**
-- `/agents` = 35; all five green on the ops board; completion report written
+- `/employees/` = 35; all five green on the ops board; completion report written
 
 
 ---
@@ -588,13 +588,13 @@ was specced and PAUSED. Un-pause him now that the typed action library exists.
 4. Meeting ingestion: transcript in → action items extracted → each becomes an
    agent_actions row with verification_status='pending' → approval inbox →
    executed with receipt.
-VERIFY: /agents = 36; a seeded transcript yields three pending actions in the
+VERIFY: /employees/ = 36; a seeded transcript yields three pending actions in the
 inbox; approving one executes it and the receipt shows verified. Green row on
 the ops board. Update DECISIONS.md: "GABRIEL reactivated <date>".
 ```
 
 **Done when**
-- `/agents` = 36; seeded transcript → three pending actions → approve one → verified receipt
+- `/employees/` = 36; seeded transcript → three pending actions → approve one → verified receipt
 
 
 ---

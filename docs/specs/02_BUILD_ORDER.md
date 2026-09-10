@@ -14,7 +14,7 @@ Paste the session header (`01_PROJECT_REF_CORRECTION.md`) first, every time.
 
 | # | Spec file | What it ships | Needs | Size |
 |---|---|---|---|---|
-| **0** | `03_PHASE0_RESTORE_API.md` + `04_ROSTER_CHANGE_CALEB_SECURITY.md` | `/agents` answering, router tier map fixed, migrations reconciled, Caleb → CISO + Nehemiah → COO | env vars (done) | S |
+| **0** | `03_PHASE0_RESTORE_API.md` + `04_ROSTER_CHANGE_CALEB_SECURITY.md` | `/employees/` answering, router tier map fixed, migrations reconciled, Caleb → CISO + Nehemiah → COO | env vars (done) | S |
 | **A** | `FOUNDATION_FIXES_GUIDE.md` | CORS whitelist, API-key gate, Fernet broker | 0 | S |
 | **B** | `CLAUDE_CODE_MASTER_PROMPT_BATCH1.md` | Rahab, Zacchaeus, Silas + Option A/B router + **the typed action library** | A | L |
 | **D** | `AGENT_OPS_AUDIT_ELIJAH_V1_1.md` (Part A) | Five-layer health board for all 29 agents; heartbeat registry | B | M |
@@ -36,7 +36,7 @@ S = a session. M = a few days. L = a week or two. XL = a month or more.
 ## SEQUENCE AND REASONING
 
 ### Right now
-**0 — Restore the API.** A checkbox, four GRANT lines, a tier-map fix, and migration bookkeeping. Until `/agents` returns 26 rows, no later item can be verified.
+**0 — Restore the API.** A checkbox, four GRANT lines, a tier-map fix, and migration bookkeeping. Until `/employees/` returns 26 rows, no later item can be verified.
 
 **A — Security foundations.** Env vars are set; the code that reads them isn't written. Half a session. Internal endpoints are open to anyone with the URL until this lands.
 

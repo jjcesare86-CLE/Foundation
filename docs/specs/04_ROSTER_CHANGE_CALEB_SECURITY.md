@@ -49,7 +49,7 @@ introspection, no secrets). Read docs/specs/04_ROSTER_CHANGE_CALEB_SECURITY.md.
    John decides.
 4. Update docs/specs/00_STATE_OF_THE_BUILD.md §2 (roster table) and
    docs/state/DECISIONS.md in the same commit.
-VERIFY: /agents returns 27; Caleb's row shows the CISO role and a
+VERIFY: /employees/ returns 27; Caleb's row shows the CISO role and a
 security-specific system_prompt; Nehemiah resolves to claude-opus-4-8 in a
 dry run; Ezra's reports_to is Caleb; the ops-audit L1 check (once D exists)
 shows both rows complete.

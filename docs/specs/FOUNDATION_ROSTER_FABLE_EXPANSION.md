@@ -206,7 +206,7 @@ Read the Foundation repo (jjcesare86-CLE/Foundation). Tasks, in order:
    FOUNDATION_ROSTER_FABLE_EXPANSION.md Part 3. All is_active=true,
    with handles/redirects/handoff arrays written in the house style.
 
-4. VERIFY: hit /agents (or /public/agents) and confirm 34 active employees
+4. VERIFY: hit /employees/ and confirm 34 active employees
    return, then confirm AN and AssistMIO frontends render the new count.
 
 5. SKILL: bump internal-educating-efficiency-skill to v1.2 per Part 2.6.

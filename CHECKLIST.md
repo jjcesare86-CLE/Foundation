@@ -4,11 +4,11 @@ _Tick as you go. Each item's VERIFY gate is in its spec. Never start the next it
 
 ## Phase 0 — Restore the API (`docs/specs/03_PHASE0_RESTORE_API.md`)
 - [ ] 0.1 Expose `foundation` schema in Supabase API settings + run GRANT block
-- [ ] 0.1 `/agents` returns 200 with 26 rows (if not, check `employee_platform_subscriptions` has rows)
+- [ ] 0.1 `/employees/` returns 200 with 26 rows (if not, check `employee_platform_subscriptions` has rows)
 - [ ] 0.2 AN-repo re-linked to `rzsryxvlaezfvftqpvbx`; `Foundation_Scaffold` renamed
 - [ ] 0.3 Migration drift reconciled — `supabase migration list` Local = Remote
 - [ ] 0.4 Router tier map fixed; Render env `MODEL_ORCH_MAX`, `MODEL_COMPLEX`, `MODEL_STANDARD`, `MODEL_COMPLEX_ENTERPRISE` set
-- [ ] 0.5 Roster change: Caleb → CISO, Nehemiah → COO, Ezra reports to Caleb (`04_ROSTER_CHANGE_CALEB_SECURITY.md`); `/agents` = 27
+- [ ] 0.5 Roster change: Caleb → CISO, Nehemiah → COO, Ezra reports to Caleb (`04_ROSTER_CHANGE_CALEB_SECURITY.md`); `/employees/` = 27
 - [ ] 0.5 Decide the AN "Ask Caleb" button: keep, or move to Nehemiah
 - [ ] 0.6 Gate: dry-run Solomon logs `claude-fable-5-1`; dry-run Nehemiah logs `claude-opus-4-8`
 

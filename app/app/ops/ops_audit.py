@@ -9,6 +9,7 @@ from typing import Optional
 
 from app.database import supabase
 from app.llm_router import llm_call, TaskTier, MODEL_MAP
+from app.prompt_composer import compose_system_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -160,7 +161,7 @@ def audit_l5(agent: dict) -> dict:
             llm_call(
                 messages=[{"role": "user", "content": "Introduce yourself in one sentence and name your department."}],
                 tier=tier,
-                system=f"You are {agent.get('biblical_name', agent['id'])}, {agent.get('role', '')} in the {agent.get('department_label', '')} department.",
+                system=compose_system_prompt(agent),
                 max_tokens=100,
                 project="foundation",
                 agent_name=agent["id"],

@@ -150,7 +150,7 @@ Foundation repo. Build agent ZACCHAEUS per BATCH1 doc Agent 27:
    anomaly flags. Log all LLM calls to llm_usage project='Foundation',
    agent_name='zacchaeus'.
 7. Seed Delivered Fireworks + LUTS as first clients; backfill 90 days of Stripe.
-Verify: /agents returns 27 active; run one categorization batch end-to-end.
+Verify: /employees/ returns 27 active; run one categorization batch end-to-end.
 ```
 
 ---
@@ -417,7 +417,7 @@ full dispatch cycle end-to-end. Log LLM calls agent_name='silas'.
 
 **Manual prereqs for John before Sprint S:** enable PostGIS extension in Supabase dashboard · create Google Maps API key (Distance Matrix + Geocoding) · confirm Exterior Rescue GPS clock-in feed endpoint.
 
-**When Batch 1 verifies (agents count = 29 on /agents):** say the word and Batch 2 ships — OBADIAH, BEZALEL, PRISCILLA. Batch 3 closes with AMOS + TABITHA.
+**When Batch 1 verifies (agents count = 29 on /employees/):** say the word and Batch 2 ships — OBADIAH, BEZALEL, PRISCILLA. Batch 3 closes with AMOS + TABITHA.
 
 ---
 
@@ -437,7 +437,7 @@ color, bg, config, system_prompt, is_active
 - `biblical_name` is the canonical identity; `product_name` is what platforms may display (Joanna's row shows `product_name = Lydia`). For the three new agents set both to the same value.
 - `handoff_to`, `covers_for`, `covered_by`, `reports_to`, `supervises` are the org-chart arrays — reference other agents by their slug convention as already used in the 26 rows (inspect a row before inserting).
 - `color` / `bg`: copy the department's existing values.
-- Each new agent also needs rows in **`foundation.employee_platform_subscriptions`** (`employee_id`, `platform_slug`, `is_active`) for every platform slug the existing 26 carry — the `/agents` route filters on this table first.
+- Each new agent also needs rows in **`foundation.employee_platform_subscriptions`** (`employee_id`, `platform_slug`, `is_active`) for every platform slug the existing 26 carry — the `/employees/` route filters on this table first.
 
 Phase 1 (Joanna rename) is **already complete** in the database. The master prompt treats it as verify-only.
 

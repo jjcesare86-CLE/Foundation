@@ -18,22 +18,28 @@ This document exists because the previous session found several places where the
 
 **Two local folders start with "Foundation."** `Foundation` is the repo. `Foundation_Scaffold` is dead weight and should be renamed (`ZZ_old_scaffold`) so tab-completion stops landing on it.
 
-## 2. THE AGENT CATALOG IS REAL AND IN THE RIGHT PLACE
+## 2. THE AGENT CATALOG IS REAL AND IN THE RIGHT PLACE — UPDATED 2026-09-09
 
-`foundation.ai_employees` (schema `foundation`, **not** `public`) holds the operational roster: **27 active agents**, verified row by row (was 26; Phase 0.5 landed 2026-09-05, see below).
+`foundation.ai_employees` (schema `foundation`, **not** `public`) holds the operational roster: **35 active agents, all live on `main`** as of 2026-09-09 (Batches 1–3 shipped: Rahab, Zacchaeus, Silas, Obadiah, Bezalel, Priscilla, Amos, Tabitha — 27 → 35), verified row by row against the live database, zero inactive rows.
 
 | Dept slug | Agents | model_tier |
 |---|---|---|
-| `csuite` | Solomon (CEO), Nehemiah (COO — new, `nehemiah-coo`), Caleb (CISO — was COO, id unchanged `caleb-coo`), Miriam (CFO), Isaiah (CSO), Abigail (CLO) | Solomon `orchestrator_max`; others `complex` |
-| `sales` | John, Luke, Mary, Paul | `standard` |
-| `marketing` | Anna, Deborah, Esther, Gideon, Nathan | `standard` |
-| `operations` | Ezra (`vince`, reports to Caleb — unchanged), Joseph (`otto`, reports to Nehemiah now), Martha (`martha-admin`, reports to Nehemiah now), Naomi (`sage`, reports to Joseph — unchanged) | Martha + Naomi `fast`; others `standard` |
-| `finance` | Hannah, Joanna | `standard` |
-| `hr` | Delilah (`ori`, reports to Nehemiah now), Eden, Leah (`leah-exec-asst`, reports to Nehemiah now) | `standard` |
-| `legal` | Peter, Rebekah | `standard` |
-| `strategy` | Elijah | `standard` |
+| `csuite` | Solomon (`solomon-ceo`, CEO), Nehemiah (`nehemiah-coo`, COO), Caleb (`caleb-coo`, CISO — id unchanged), Miriam (`miriam-cfo`, CFO), Isaiah (`isaiah-cso`, CSO), Abigail (`abigail-clo`, CLO) | Solomon `orchestrator_max`; others `complex` |
+| `sales` | John (`rex`), Luke (`blake`), Mary (`aria`), Paul (`ace`), Tabitha (`tabitha-donors` — Batch 3) | `standard` |
+| `marketing` | Anna (`nina`), Deborah (`maya`), Esther (`clara`), Gideon (`drew`), Nathan (`kai`), Rahab (`rahab-reputation` — Batch 1), Bezalel (`bezalel-design` — Batch 2) | `standard` |
+| `operations` | Ezra (`vince`, reports to Caleb — unchanged), Joseph (`otto`, reports to Nehemiah), Martha (`martha-admin`, reports to Nehemiah), Naomi (`sage`, reports to Joseph), Silas (`silas-dispatch` — Batch 1), Obadiah (`obadiah-property` — Batch 2) | Martha + Naomi `fast`; others `standard` |
+| `finance` | Hannah (`fin`), Joanna (`joanna-finance`), Zacchaeus (`zacchaeus-books` — Batch 1) | `standard` (Hannah + Joanna's `department_label` fixed to "Finance" 2026-09-09, was "People & Culture" / "Operations" respectively) |
+| `hr` | Delilah (`ori`, reports to Nehemiah), Eden (`eden-headspace`), Leah (`leah-exec-asst`, reports to Nehemiah), Priscilla (`priscilla-training` — Batch 2) | `standard` |
+| `legal` | Peter (`leo`), Rebekah (`rebekah-legal`), Amos (`amos-compliance` — Batch 3) | `standard`; Amos `fast` |
+| `strategy` | Elijah (`dean`) | `standard` |
 
-**Phase 0.5 is DONE** (2026-09-05, migration `20260905120000_caleb_ciso_nehemiah_coo.sql`, branch `batch1-expansion`): Caleb → CISO (id kept as `caleb-coo` — a PK rename was judged riskier than the mismatch between id and role, same call as Joanna's product_name pattern), Nehemiah inserted as COO (`nehemiah-coo`). Ezra stays reporting to Caleb per spec. The other four of Caleb's old direct reports (Joseph/otto, Delilah/ori, Leah/leah-exec-asst, Martha/martha-admin) were moved to report to Nehemiah — the spec named Joseph/Naomi/Martha explicitly but was silent on Delilah and Leah; both were moved on the same "COO-line reports go to the new COO" logic since neither read as security-adjacent. Worth John's confirmation, not treated as ambiguous enough to block on. Live-verified: `GET /employees/?platform=automation-nation` returns 27, both CALEB and NEHEMIAH present.
+**Phase 0.5 is DONE** (2026-09-05, migration `20260905120000_caleb_ciso_nehemiah_coo.sql`): Caleb → CISO (id kept as `caleb-coo` — a PK rename was judged riskier than the mismatch between id and role, same call as Joanna's product_name pattern), Nehemiah inserted as COO (`nehemiah-coo`). Ezra stays reporting to Caleb per spec. The other four of Caleb's old direct reports (Joseph/otto, Delilah/ori, Leah/leah-exec-asst, Martha/martha-admin) were moved to report to Nehemiah. 2026-09-09: two of Solomon's and Isaiah's prompt-facing fields still pointed day-to-day-ops/tactical-execution delegation at Caleb instead of the actual COO — fixed (`solomon-ceo.outside_scope` and `isaiah-cso.outside_scope` now say NEHEMIAH; Caleb's legitimate security-domain references, e.g. Nehemiah's own `outside_scope` routing security concerns to Caleb, and the org-chart `handoff_to`/`reports_to`/`supervises` entries, are unchanged and correct).
+
+**Batches 1–3 are DONE** (2026-09-05, branch `batch1-expansion`, merged to `main`): Rahab (reputation), Zacchaeus (books), Silas (dispatch) in Batch 1; Obadiah (property), Bezalel (design), Priscilla (training) in Batch 2; Amos (compliance), Tabitha (donors) in Batch 3. Full writeups: `docs/specs/BATCH1_COMPLETION_REPORT.md`, `BATCH2_3_COMPLETION_REPORT.md`.
+
+**Gabriel is paused, not present.** Gabriel was never added to `foundation.ai_employees` — the original build was paused immediately (a missing CORS fix, from the session before Item A landed) and never restarted. There is no inactive Gabriel row to find; "reactivating Gabriel" means building the row and its module from scratch, not flipping `is_active`. RUNBOOK.md's "H+ — Gabriel reactivation" phase is still queued, not started.
+
+Live-verified 2026-09-09: `GET /employees/?platform=automation-nation` returns 35.
 
 Department slugs in the database are lowercase (`csuite`, `finance`…), not the display labels the roster doc uses — the API returns both `department` and `department_label`.
 
@@ -57,15 +63,13 @@ plus `is_active` in the filter. A second table `foundation.employee_platform_sub
 
 Any new agent row (Rahab, Zacchaeus, Silas, and Batches 2–3) must populate **this** column set. Where earlier specs say "match the house column pattern," this is the pattern.
 
-## 5. WHY `/agents` RETURNS 500 — CORRECTED 2026-09-05
+## 5. `/agents` IS GONE — `/employees/` IS THE ONLY ROSTER ROUTE — UPDATED 2026-09-09
 
-**The schema-exposure theory is wrong.** Verified directly against the live project: both the anon key and the service-role key successfully query `foundation.ai_employees` *and* `foundation.agents` via PostgREST right now (`SELECT` succeeds, real rows returned). `foundation` is exposed and grants are fine. Do not re-tick the checkbox or re-run the GRANT block on this theory — there's nothing to fix there.
+**The schema-exposure theory was always wrong** (corrected 2026-09-05): both the anon key and the service-role key could always query `foundation.ai_employees` via PostgREST fine. `foundation` is exposed and grants are fine. There was never anything to fix there.
 
-**The real story: `/agents` and `/employees` are two different, unrelated routes.**
-- `GET /employees/?platform=...` (`app/app/routers/employees.py`, service-role client, queries `foundation.ai_employees`) is the real 26-agent catalog endpoint. **It already returns 200 live.** This is the route every platform integration should call.
-- `GET /agents` (`app/app/routers/agents.py`, anon client via `get_client()`, queries `foundation.agents`) is a separate, older, largely-unused table — one row, a "Greeting Agent" playground entry from March. It is **not** the roster and never was. It still 500s live on Render as of this check; reproducing the identical query locally (both anon and service-role keys) succeeds, so the cause is Render-environment-specific — most likely `SUPABASE_ANON_KEY` on Render (`render.yaml` marks it `sync: false`, dashboard-managed) is stale or wrong. Needs a Render dashboard check, not a schema-exposure fix. Low priority: nothing in the build order actually depends on this route.
+**The real story, now closed out:** `GET /employees/?platform=...` (`app/app/routers/employees.py`, service-role client, queries `foundation.ai_employees`) has always been the real roster endpoint and is the only one that matters. The separate, broken `GET /agents` route (`app/app/routers/agents.py`, anon client, queried a different, unrelated one-row `foundation.agents` scaffold table from March — never the roster) was removed outright in commit `16501b9` (2026-09-05, "fix: remove dead /agents route; recover missing voice_edit + pricing modules"). It no longer exists in this codebase at all — not a route to fix, not a route to route around, gone. Every doc in this repo referencing `/agents` or `/public/agents` as a route to hit has been updated to `/employees/` (2026-09-09 sweep); the only remaining `/agents` mentions are in this section and `BATCH1_COMPLETION_REPORT.md` §"stale VERIFY criterion", both deliberately narrating the history above, not live references.
 
-Phase 0's real gate is `/employees/` returning 26 (27 after 0.5) — already true.
+Phase 0's real gate is `/employees/?platform=automation-nation` returning the active roster count — as of 2026-09-09 that's **35** (see §2). Live-verified.
 
 ## 6. A ROUTER BUG THAT MATTERED FOR SOLOMON — FIXED 2026-09-05
 

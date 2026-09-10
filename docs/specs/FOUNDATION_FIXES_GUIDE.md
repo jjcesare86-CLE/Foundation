@@ -60,7 +60,7 @@ Make these changes:
 
    # USAGE: add `dependencies=[Depends(require_api_key)]` to any router
    # or individual endpoint that should be protected. Public endpoints
-   # (like /public/agents, /switchboard/bootstrap with its own JWT auth) stay open.
+   # (like /employees/, /switchboard/bootstrap with its own JWT auth) stay open.
    # Example:
    #   app.include_router(admin_router, dependencies=[Depends(require_api_key)])
    #   app.include_router(ops_router, prefix="/ops", dependencies=[Depends(require_api_key)])
@@ -71,7 +71,7 @@ Make these changes:
    - /connections/callback/* stays open (OAuth callbacks need to reach it)
    - /switchboard/* uses its own JWT auth (sb_settings JWT, not the API key)
    - /public/* stays open
-   - /agents stays open (read-only roster)
+   - /employees/ stays open (read-only roster)
 
 4. Commit: "fix: CORS whitelist + API key gate on internal endpoints"
 
@@ -210,7 +210,7 @@ Don't build this now — just know it's a 30-minute job when the time comes.
 ### Quick verification after deploy:
 ```bash
 # 1. CORS — should get proper headers back
-curl -I -X OPTIONS https://foundation-api-9gpl.onrender.com/agents \
+curl -I -X OPTIONS https://foundation-api-9gpl.onrender.com/employees/ \
   -H "Origin: https://automaitionnation.com" \
   -H "Access-Control-Request-Method: GET"
 # Look for: access-control-allow-origin: https://automaitionnation.com
@@ -225,7 +225,7 @@ curl https://foundation-api-9gpl.onrender.com/ops/agent-health \
 # Expected: 200 + health data
 
 # 4. Public endpoint — should work without key
-curl https://foundation-api-9gpl.onrender.com/agents
+curl https://foundation-api-9gpl.onrender.com/employees/
 # Expected: 200 + roster
 
 # 5. Fernet — start the service; if KEY is missing, it refuses to boot
@@ -242,7 +242,7 @@ Foundation repo, branch security-foundations. Tasks:
    middleware with ALLOWED_ORIGINS from env (fallback to localhost for dev)
    per docs/specs/FOUNDATION_FIXES_GUIDE.md Step 1. Add the API key gate
    (X-Foundation-API-Key header, require_api_key dependency) and apply it
-   to /ops/* and /admin/* routers. Leave /public/*, /agents, /switchboard/*,
+   to /ops/* and /admin/* routers. Leave /public/*, /employees/, /switchboard/*,
    and /connections/callback/* unprotected (they have their own auth or
    are intentionally public).
 

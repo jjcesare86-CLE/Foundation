@@ -1,5 +1,5 @@
 # PHASE 0 — RESTORE THE API
-**Nothing else in this package can be verified until `/agents` returns 26 rows. Do this first.**
+**Nothing else in this package can be verified until `/employees/` returns 26 rows. Do this first.**
 
 Three problems, all found last session, all small. In order:
 
@@ -20,7 +20,7 @@ alter default privileges in schema foundation grant select on tables to anon, au
 
 Verify from PowerShell:
 ```powershell
-try { (Invoke-WebRequest "https://foundation-api-9gpl.onrender.com/agents").StatusCode } catch { $_.Exception.Response.StatusCode }
+try { (Invoke-WebRequest "https://foundation-api-9gpl.onrender.com/employees/").StatusCode } catch { $_.Exception.Response.StatusCode }
 ```
 Expect `200`. If still 500, the route filters on `employee_platform_subscriptions` before it ever reads employees — confirm that table has rows:
 ```sql
@@ -111,7 +111,7 @@ Run the migration prompt in `04_ROSTER_CHANGE_CALEB_SECURITY.md`. Batch 1 refere
 ## 0.6 Gate
 
 Phase 0 is done when all four are true:
-- `GET /agents` returns 200 with 26 rows before 0.5, 27 after
+- `GET /employees/` returns 200 with 26 rows before 0.5, 27 after
 - `supabase migration list` shows Local and Remote in agreement
 - The unit test in 0.4 passes and a dry-run Solomon call logs `claude-fable-5-1` to `llm_usage`
 - AN-repo's project-ref reads `rzsryxvlaezfvftqpvbx`
