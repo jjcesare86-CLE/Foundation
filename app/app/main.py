@@ -12,6 +12,10 @@ from app.routers.pricing import pricing_router
 from app.rahab.action_types import register_rahab_actions
 from app.silas.action_types import register_silas_actions
 from app.switchboard.router import router as switchboard_router
+from app.switchboard import switchboard_db
+
+# Addendum F.5/F.6: refuse to boot if the Foundation and Switchboard projects are mixed up.
+switchboard_db.validate_config()
 
 
 app = FastAPI(

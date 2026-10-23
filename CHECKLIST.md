@@ -68,6 +68,18 @@ _Tick as you go. Each item's VERIFY gate is in its spec. Never start the next it
 - [ ] Scoreboard UI per approved mockup; recommendation → action library
 - [ ] v1.1: calls (VAPI + tracking numbers) and web traffic (GA4 card + beacon)
 
+## S0 — Switchboard's own Supabase project (`SWITCHBOARD_ADDENDUM_F_SEPARATE_DATABASE.md`)
+- [x] S0.2 Migration 001 applied to `gytuxzlrsgbueabywxhh` (switchboard repo PR #2); RLS on all 8 tables; live RLS gate `RLS_TESTS_PASSED: 51 checks`
+- [x] F.9.1 Inventory: every Foundation `sb_*` table has 0 rows (no data copy needed)
+- [x] S0.4 `switchboard_db` client, startup guard (refuses identical URLs / reused keys / reused JWT secret), `POST /switchboard/token`, `sb_workspaces` sync; 22 unit tests green
+- [x] F.9.3 Dual-mode repository layer; same API scenarios pass in `foundation` and `switchboard` mode
+- [ ] S0.3 Render env: the five F.5 vars (John)
+- [ ] Gate: a Foundation key does not work on the Switchboard project and vice versa (needs the Render env; live check)
+- [ ] Gate: widget JWT accepted by the live project (needs `SWITCHBOARD_SUPABASE_JWT_SECRET`; see DECISIONS 2026-10-22 on signing keys)
+- [ ] S0.5 PITR + daily backups (John)
+- [ ] F.9.5 Flip `SWITCHBOARD_DB_MODE=switchboard` (John, after env is set)
+- [ ] F.9.6 Retire Foundation `sb_*` tables (rename only, at least 14 days after flip, separate approval)
+
 ## I — Switchboard web (`SWITCHBOARD_BUILD.md`)
 - [ ] P1 widget core (Shadow DOM), bootstrap/threads, AN embed, `sb_*` tables incl. `open_items`
 - [ ] P2 proactive DMs from action library; presence from `agent_jobs`; handoffs
@@ -85,6 +97,26 @@ _Tick as you go. Each item's VERIFY gate is in its spec. Never start the next it
 - [ ] `caleb.automaitionnation.com` — Caleb as CISO (decided)
 - [ ] `switchboard.automaitionnation.com` live, HTTPS, Lighthouse ≥ 90
 - [ ] Security page live; both subdomains in `ALLOWED_ORIGINS`
+
+## O — Connected agents (`SWITCHBOARD_ADDENDUM_D_CONNECTED_AGENTS.md`)
+- [ ] Decisions made or defaults accepted (§D.14); ToS/privacy clause approved
+- [ ] **Q — Billing and seats (Addendum G):** seat counting; test-mode Stripe products; webhook verified + idempotent; $19/$17/$14 tier math proven; fair-use meters; margin check G.6 done before live prices
+- [ ] O0 (inside I): `sb_participants` + `participant_id` backfilled; EX chip, rose group, dashed edge render
+- [ ] (O0–O3 are ALL launch blockers — decided Oct 13)
+- [ ] O1: webhook adapter, 3-step add flow, scopes enforced server-side, egress log, SSRF guard, redaction, circuit breaker
+- [ ] O1: `EMBED_GUIDE_CONNECTED.md` + reference agent connects in < 15 min
+- [ ] O2: A2A adapter, card-hash pinning, task status in presence line
+- [ ] §D.7 test list green, output pasted; Unverified tag on every external message
+- [ ] No connected agent in PTT or Eden (tested)
+
+## P — Work Rooms — IN LAUNCH SCOPE (`SWITCHBOARD_ADDENDUM_E_WORK_ROOMS.md`)
+- [ ] Decisions made or defaults accepted (§E.12); repo review done (§E.3)
+- [ ] P0 (inside I): WR chip, teal hue, LIVE badge, `workroom` participant kind
+- [ ] P1: LiveKit token mint, voice/video/chat/host controls, desktop screen share, metering, tenancy tests
+- [ ] P2: document sharing, mobile audio-first + camera share, guest invites
+- [ ] P3: translated captions, transcript, AI note-taker → approved action items
+- [ ] P4: recording with consent + 30-day expiry
+- [ ] §E.7 test list green, output pasted
 
 ## K — Native mobile, phases 1–4 (`SWITCHBOARD_NATIVE_MOBILE_VOICE.md`)
 - [ ] Apple PTT entitlement request FILED (day one of K)

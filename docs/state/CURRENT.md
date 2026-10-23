@@ -34,3 +34,8 @@ See `docs/specs/00_STATE_OF_THE_BUILD.md` (rewritten 2026-09-09 — 35 agents, c
 - Live probes: `/employees/?platform=automation-nation` = 200 with 35 rows; `/ops/agent-health` without key = 403; `/health` = 200; `/switchboard/bootstrap` without token = 401.
 - Blocked: Addendum F missing (see BLOCKED_ON_JOHN.md). Foundation `app/tests` has only 1 test file (pytest: 1 skipped), so most CHECKLIST gates cannot be ticked from tests alone.
 - Next: add Addendum F, then S0; meanwhile I phase 2 (proactive DMs / presence) can start in Foundation.
+- S0 done except the steps that need John: migration 001 applied (switchboard repo PR #2), RLS gate passes, Foundation API has the second client, startup guard, `/switchboard/token`, workspace mirror, dual-mode repo layer, 22 tests. Resume: after Render env is set, run the live Foundation-key-vs-Switchboard-project check, flip `SWITCHBOARD_DB_MODE`, then item I phase 2.
+- 2026-10-13: Addendum D (Connected Agents) specced + demo v12. Build phase O0 inside item I; O1–O3 later. Awaiting John's §D.14 decisions (defaults stand).
+
+- 2026-10-22: Switchboard data -> own Supabase project (Addendum F, item S0). Needs from John: project ref + five SWITCHBOARD_* Render vars.
+- 2026-10-23: package updated (Addendum G billing/seats = item Q; ENV_VARS.md). Docs synced into both repos on `sb/docs-package-2026-10-23`. `ENV_NEEDED.md` and `BLOCKED_ON_JOHN.md` rewritten to match `ENV_VARS.md`. Order: ... G -> S0 -> I -> Q -> J -> P -> O -> N.

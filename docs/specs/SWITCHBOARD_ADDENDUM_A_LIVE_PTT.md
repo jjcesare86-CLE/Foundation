@@ -1,4 +1,7 @@
 # DOCK NATIVE MOBILE — ADDENDUM A
+
+> **DATABASE (Oct 22, decided by John):** every `sb_*`, `ptt_*`, `work_room*` and `connected_agent*` table in this document lives in the **dedicated Switchboard Supabase project**, not Foundation. `workspace_id`/`client_id` references point to `sb_workspaces(id)` (mirror of Foundation `clients.id`). See `SWITCHBOARD_ADDENDUM_F_SEPARATE_DATABASE.md`.
+
 **Live two-way PTT channels + shipping as customer-facing software**
 v1.0 · Extends SWITCHBOARD_NATIVE_MOBILE_VOICE.md · Drop into docs/specs/
 
@@ -31,7 +34,7 @@ The desk case is not a smaller version of the crew case. They need opposite defa
 ```sql
 CREATE TABLE ptt_channels (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  client_id UUID NOT NULL REFERENCES clients(id),
+  client_id UUID NOT NULL REFERENCES sb_workspaces(id),
   name TEXT NOT NULL,                  -- "Storm response", "Crew 2", "Front office"
   kind TEXT DEFAULT 'team',            -- team | direct | broadcast
   linked_thread_id UUID,               -- Switchboard conversation this channel belongs to
@@ -114,6 +117,8 @@ Honest list, because these are ongoing costs, not one-time:
 **Interim distribution:** TestFlight for your own properties and the first pilot client. Real devices, real crews, no App Store review on every iteration. Go public only once PTT survives a full LUTS show night and a week of Exterior Rescue dispatch.
 
 ### 4.3 Revised pricing
+> **SUPERSEDED Oct 23 by Addendum G** (seat-based pricing: $149 includes 5 seats, graduated extra seats). Mobile/PTT pricing below is history; confirm decision G.10 #3.
+
 The earlier $149/mo Switchboard figure assumed a web widget. Native apps with live audio carry real marginal cost per seat, so the structure changes:
 
 | Line | Price | Rationale |
@@ -153,7 +158,7 @@ Phase 5 moved earlier deliberately — the channel model and relay are needed re
 ```
 Repo switchboard-mobile + Foundation API. Read
 docs/specs/SWITCHBOARD_NATIVE_MOBILE_VOICE.md and SWITCHBOARD_ADDENDUM_A_LIVE_PTT.md.
-Same GLOBAL RULES (Supabase rhtwtoinmiekttvunlzs, CLI migrations, verify
+Same GLOBAL RULES (Switchboard Supabase project (Addendum F; NOT rhtwtoinmiekttvunlzs), CLI migrations, verify
 gates, no secrets).
 
 P5: Migrations for ptt_channels, ptt_members, ptt_transmissions with RLS.
