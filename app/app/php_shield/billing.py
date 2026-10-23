@@ -81,6 +81,7 @@ def create_checkout(svc, lead: dict, tier: Optional[str], maintenance: bool) -> 
     except Exception as e:  # noqa: BLE001
         log.exception("stripe session creation failed")
         svc.alerter.alert("stripe:create_session", "Stripe checkout creation failed", f"{type(e).__name__}: {e}")
+        svc.store.update("orders", {"status": "canceled"}, id=order["id"], status="pending_payment")  # no orphan order
         raise BillingError("could not start checkout, please try again shortly", 502) from e
     svc.store.update("orders", {"stripe_checkout_session_id": session["id"]}, id=order["id"])
     svc.store.update("leads", {"status": "checkout_started"}, id=lead["id"])

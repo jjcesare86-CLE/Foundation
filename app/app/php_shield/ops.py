@@ -14,7 +14,6 @@ Nothing that matters is allowed to fail silently:
 """
 import json
 import logging
-import os
 import threading
 import time
 from pathlib import Path

@@ -26,6 +26,9 @@ REQUIRED_IN_PRODUCTION = {
     "PHP_SHIELD_IP_HASH_SALT": "salt for hashing client IPs in rate-limit and lead records",
 }
 
+# The monthly rescan cron only reads the database and sends email.
+CRON_REQUIRED = ("PHP_SHIELD_SUPABASE_URL", "PHP_SHIELD_SUPABASE_SERVICE_ROLE_KEY", "RESEND_API_KEY", "PHP_SHIELD_OWNER_EMAIL")
+
 OPTIONAL = {
     "PHP_SHIELD_SITE_URL": f"public marketing site (default {SITE_URL_DEFAULT})",
     "PHP_SHIELD_FROM_EMAIL": "From address, must be on a Resend-verified domain",
@@ -88,8 +91,8 @@ class ConfigReport:
         return not self.missing
 
 
-def check() -> ConfigReport:
-    missing = [n for n in REQUIRED_IN_PRODUCTION if not env(n)]
+def check(names=None) -> ConfigReport:
+    missing = [n for n in (names or REQUIRED_IN_PRODUCTION) if not env(n)]
     warnings = []
     key = env("STRIPE_SECRET_KEY")
     if key and not key.startswith(("sk_", "rk_")):
@@ -101,9 +104,9 @@ def check() -> ConfigReport:
     return ConfigReport(missing=missing, warnings=warnings)
 
 
-def validate_startup() -> ConfigReport:
+def validate_startup(names=None) -> ConfigReport:
     """Fail loudly. In production a missing required var refuses to boot."""
-    report = check()
+    report = check(names)
     if report.missing and is_production():
         lines = "\n".join(f"  - {n}: {REQUIRED_IN_PRODUCTION[n]}" for n in report.missing)
         raise RuntimeError(f"PHP Shield refusing to start: missing required environment variables:\n{lines}")

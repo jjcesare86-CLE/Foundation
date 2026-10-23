@@ -7,7 +7,6 @@ PHP Shield -- HTTP API.
   webhook        POST /php-shield/stripe/webhook   (Stripe signature verified)
   admin router   /php-shield/admin/...    X-Admin-Key == PHP_SHIELD_ADMIN_API_KEY
 """
-import hashlib
 import logging
 import re
 import secrets
@@ -235,7 +234,7 @@ async def stripe_webhook(request: Request, stripe_signature: Optional[str] = Hea
     try:
         return await run_in_threadpool(billing.handle_webhook, svc(), payload, stripe_signature)
     except billing.WebhookError as e:
-        raise HTTPException(e.status_code, str(e))
+        raise HTTPException(e.status_code, str(e)) from e
 
 
 # -- admin ----------------------------------------------------------------------

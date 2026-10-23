@@ -135,7 +135,7 @@ def _validate_host(host: str) -> str:
     try:
         host = host.encode("idna").decode("ascii")
     except UnicodeError:
-        raise UnsafeURL("invalid hostname")
+        raise UnsafeURL("invalid hostname") from None
     if "." not in host or host == "localhost" or host.endswith(BLOCKED_SUFFIXES):
         raise UnsafeURL("internal hostnames are not allowed")
     if len(host) > 253 or not all(_LABEL_RE.match(label) for label in host.split(".")):
@@ -156,7 +156,7 @@ def validate_url(url: str) -> Target:
     try:
         port = parts.port
     except ValueError:
-        raise UnsafeURL("invalid port")
+        raise UnsafeURL("invalid port") from None
     if port is None:  # NOT `port or default`: an explicit port 0 must be rejected, not defaulted
         port = 443 if parts.scheme == "https" else 80
     if port not in ALLOWED_PORTS:
@@ -186,7 +186,7 @@ def default_resolver(host: str, port: int) -> list:
     try:
         infos = socket.getaddrinfo(host, port, type=socket.SOCK_STREAM)
     except socket.gaierror:
-        raise FetchError("could not resolve host")
+        raise FetchError("could not resolve host") from None
     return [info[4][0] for info in infos]
 
 
@@ -200,7 +200,7 @@ def resolve_public(host: str, port: int, resolver: Optional[Resolver] = None) ->
         try:
             ip = ipaddress.ip_address(str(a).split("%")[0])
         except ValueError:
-            raise UnsafeURL("host resolved to an invalid address")
+            raise UnsafeURL("host resolved to an invalid address") from None
         if ip_is_blocked(ip):
             raise UnsafeURL("host resolves to a non-public address")
         ips.append(ip)
@@ -246,9 +246,9 @@ def default_transport(ip: str, target: Target, headers: dict, deadline: float, m
             pool, resp = _request(verify=False)
             tls_verified = False
     except urllib3.exceptions.HTTPError as e:
-        raise FetchError(f"request failed: {type(e).__name__}")
+        raise FetchError(f"request failed: {type(e).__name__}") from e
     except OSError as e:
-        raise FetchError(f"request failed: {type(e).__name__}")
+        raise FetchError(f"request failed: {type(e).__name__}") from e
 
     chunks, size, truncated = [], 0, False
     try:

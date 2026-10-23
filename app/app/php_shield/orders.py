@@ -15,9 +15,8 @@ forward through intake -> authorize -> verify; only the admin can start/deliver/
 import logging
 import secrets
 from typing import Optional
-from urllib.parse import urlsplit
 
-from app.php_shield import agreement, config, netsafe, notify, tiers
+from app.php_shield import agreement, netsafe, notify, tiers
 from app.php_shield.ops import guarded_write
 from app.php_shield.pdf import signed_agreement_pdf
 from app.php_shield.store import StoreConflict, StoreRejected, iso
@@ -188,7 +187,7 @@ def submit_intake(svc, order: dict, data: dict) -> dict:
     try:
         netsafe.validate_url(netsafe.normalize_user_url(site_url))
     except netsafe.UnsafeURL as e:
-        raise OrderError(f"invalid site url: {e}")
+        raise OrderError(f"invalid site url: {e}") from e
     if not _same_site(site_url, order["domain"]):
         raise OrderError(f"site url must be on the purchased domain ({order['domain']})")
     method = data.get("access_method")
@@ -212,7 +211,7 @@ def submit_intake(svc, order: dict, data: dict) -> dict:
         guarded_write(svc, "intake", row, lambda: svc.store.insert("intake", row), {"order": order["id"]})
     except Exception as e:  # noqa: BLE001
         if isinstance(e.__cause__, StoreConflict):
-            raise OrderError("intake already submitted", 409)
+            raise OrderError("intake already submitted", 409) from e
         raise
     return transition(svc, order["id"], "intake_complete", "customer")
 
@@ -250,7 +249,7 @@ def sign_authorization(svc, order: dict, *, typed_name: str, agree: bool, ip: st
         auth = guarded_write(svc, "authorization", row, lambda: svc.store.insert("authorizations", row), {"order": order["id"]})
     except Exception as e:  # noqa: BLE001
         if isinstance(e.__cause__, StoreConflict):
-            raise OrderError("this order is already signed", 409)
+            raise OrderError("this order is already signed", 409) from e
         raise
     pdf = signed_agreement_pdf(auth, order)
     attach = [{"filename": f"authorization-{order['id']}.pdf", "content": pdf}]

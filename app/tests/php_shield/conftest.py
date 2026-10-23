@@ -40,7 +40,11 @@ class FakeStripe:
         self.sessions = []
         self._real = billing.StripeGateway()
 
+    fail = False
+
     def create_session(self, **params):
+        if self.fail:
+            raise RuntimeError("stripe is down")
         self.sessions.append(params)
         return {"id": f"cs_test_{len(self.sessions)}", "url": f"https://checkout.stripe.test/c/{len(self.sessions)}"}
 

@@ -48,7 +48,7 @@ def run_monthly(svc, *, now=None, scanner: Optional[Callable] = None) -> dict:
 
             rep = {"order_id": order["id"], "domain": sub["domain"], "kind": "monthly", "version": result.get("version"),
                    "risk_level": _level(result), "result": result}
-            guarded_write(svc, "scan_report", rep, lambda: svc.store.insert("scan_reports", rep), {"sub": sub["id"]})
+            guarded_write(svc, "scan_report", rep, lambda rep=rep: svc.store.insert("scan_reports", rep), {"sub": sub["id"]})
 
             if result.get("error"):
                 svc.alerter.alert(f"maint:error:{sub['id']}", f"Monthly rescan could not reach {sub['domain']}", result["error"])

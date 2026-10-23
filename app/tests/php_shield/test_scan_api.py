@@ -2,7 +2,7 @@
 import pytest
 
 from app.php_shield import tiers
-from tests.php_shield.conftest import ENV, make_lead
+from tests.php_shield.conftest import make_lead
 
 GOOD = {"url": "https://example.com", "email": "me@example.com", "consent": True, "company_website": ""}
 
@@ -215,3 +215,12 @@ def test_unknown_tier_rejected(client, svc):
     lead = make_lead(svc)
     r = client.post("/php-shield/checkout", json={"report_token": lead["report_token"], "tier": "platinum", "maintenance": False})
     assert r.status_code == 400 and not svc.stripe.sessions and not svc.store.select("orders")
+
+
+def test_stripe_failure_is_a_clean_502_alerts_owner_and_leaves_no_orphan_order(client, svc):
+    lead = make_lead(svc)
+    svc.stripe.fail = True
+    r = client.post("/php-shield/checkout", json={"report_token": lead["report_token"], "tier": "basic", "maintenance": False})
+    assert r.status_code == 502 and "stripe is down" not in r.text
+    assert [o["status"] for o in svc.store.select("orders")] == ["canceled"]
+    assert any("Stripe checkout creation failed" in m["subject"] for m in svc.mailer.sent)

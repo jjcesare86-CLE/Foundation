@@ -4,7 +4,7 @@ import json
 import pytest
 from fastapi.testclient import TestClient
 
-from app.php_shield import config, ops
+from app.php_shield import config
 from app.php_shield.emailer import MailError, OutboxMailer
 from app.php_shield.ops import Alerter, WriteFailed, dead_letter, guarded_write, startup_selftest
 from app.php_shield.pdf import signed_agreement_pdf
@@ -209,3 +209,28 @@ def test_pdf_is_a_valid_pdf_and_regenerates_identically(client, svc):
     a, b = signed_agreement_pdf(auth, o), signed_agreement_pdf(auth, o)
     assert a.startswith(b"%PDF") and a.rstrip().endswith(b"%%EOF") and len(a) > 2000
     assert a == b  # deterministic: the stored row fully determines the document
+
+
+def test_cron_has_a_smaller_required_set(monkeypatch):
+    monkeypatch.setenv("PHP_SHIELD_ENV", "production")
+    for name in config.REQUIRED_IN_PRODUCTION:
+        monkeypatch.delenv(name, raising=False)
+    for name in config.CRON_REQUIRED:
+        monkeypatch.setenv(name, "x")
+    assert config.validate_startup(config.CRON_REQUIRED).ok  # no Stripe/admin/salt needed
+    with pytest.raises(RuntimeError):
+        config.validate_startup()  # but the API itself still demands everything
+
+
+def test_render_blueprint_declares_every_required_var_for_the_api():
+    import pathlib
+    import yaml
+
+    d = yaml.safe_load((pathlib.Path(__file__).parents[2] / "render.yaml").read_text(encoding="utf-8"))
+    svc = {s["name"]: s for s in d["services"]}
+    api_vars = {v["key"] for v in svc["php-shield-api"]["envVars"]}
+    cron_vars = {v["key"] for v in svc["php-shield-monthly-rescan"]["envVars"]}
+    assert set(config.REQUIRED_IN_PRODUCTION) <= api_vars, set(config.REQUIRED_IN_PRODUCTION) - api_vars
+    assert set(config.CRON_REQUIRED) <= cron_vars
+    assert svc["php-shield-api"]["healthCheckPath"] == "/health"
+    assert "app.php_shield_main:app" in svc["php-shield-api"]["startCommand"]

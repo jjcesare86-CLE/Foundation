@@ -129,7 +129,9 @@ def test_rebinding_on_second_hop_is_caught_by_revalidation():
     "//169.254.169.254/", "http://metadata.google.internal/computeMetadata/v1/",
 ])
 def test_redirect_to_internal_is_blocked(location):
-    transport = lambda *a, **k: ok(status=302, location=location)
+    def transport(*a, **k):
+        return ok(status=302, location=location)
+
     with pytest.raises(UnsafeURL):
         fetch("https://example.com/", resolver=lambda h, p: [PUBLIC], transport=transport)
 

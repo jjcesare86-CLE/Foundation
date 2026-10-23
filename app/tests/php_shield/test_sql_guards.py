@@ -119,11 +119,14 @@ def order_at(cur, upto):
         if step == "paid":
             set_status(cur, oid, "paid", paid_at="2026-01-01")
         elif step == "intake_complete":
-            add_intake(cur, oid); set_status(cur, oid, "intake_complete")
+            add_intake(cur, oid)
+            set_status(cur, oid, "intake_complete")
         elif step == "authorized":
-            add_auth(cur, oid); set_status(cur, oid, "authorized")
+            add_auth(cur, oid)
+            set_status(cur, oid, "authorized")
         elif step == "verified":
-            add_verification(cur, oid); set_status(cur, oid, "verified")
+            add_verification(cur, oid)
+            set_status(cur, oid, "verified")
         elif step == "in_progress":
             set_status(cur, oid, "in_progress")
     return oid
@@ -182,7 +185,8 @@ def test_cannot_skip_steps(cur, frm, to):
 def test_cannot_go_backwards_or_leave_terminal_states(cur):
     oid = order_at(cur, "in_progress")
     assert "illegal" in fails(cur, "update orders set status='verified' where id=%s", (oid,))
-    set_status(cur, oid, "delivered"); set_status(cur, oid, "closed")
+    set_status(cur, oid, "delivered")
+    set_status(cur, oid, "closed")
     assert "illegal" in fails(cur, "update orders set status='in_progress' where id=%s", (oid,))
 
 
@@ -232,7 +236,9 @@ def test_authorization_only_when_order_is_intake_complete_and_domain_matches(cur
     oid = new_order(cur)
     assert "intake_complete" in fails(cur, "insert into authorizations (order_id, domain, typed_name, agreement_version, agreement_hash,"
                                            " agreement_text, ip, user_agent) values (%s,'example.com','Pat Owner','v',%s,'t','1.1.1.1','u')", (oid, "b" * 64))
-    set_status(cur, oid, "paid", paid_at="2026-01-01"); add_intake(cur, oid); set_status(cur, oid, "intake_complete")
+    set_status(cur, oid, "paid", paid_at="2026-01-01")
+    add_intake(cur, oid)
+    set_status(cur, oid, "intake_complete")
     assert "does not match" in fails(cur, "insert into authorizations (order_id, domain, typed_name, agreement_version, agreement_hash,"
                                           " agreement_text, ip, user_agent) values (%s,'different.com','Pat Owner','v',%s,'t','1.1.1.1','u')", (oid, "b" * 64))
 
