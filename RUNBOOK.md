@@ -28,7 +28,8 @@ spec disagrees with it, 00_STATE wins. Where 00_STATE disagrees with the live
 database, the live database wins — and update 00_STATE.
 
 Full project map (reference only):
-  rhtwtoinmiekttvunlzs = Foundation          ← all agent / Switchboard / playbook work goes HERE
+  rhtwtoinmiekttvunlzs = Foundation          ← agent catalog, router, broker, receipts, playbooks. NOT Switchboard customer data
+  <SWITCHBOARD_REF>    = Switchboard         ← ALL sb_*, ptt_*, work_room*, connected_agent* tables (own project, own repo `switchboard`; Addendum F). John supplies the ref at S0.1
   rzsryxvlaezfvftqpvbx = Automation Nation   ← AN sales pipeline + homepage only
   xgaqgqkycckolwfcrmop = VoiceMIO
   qstcxqytmaqkygdiacfd = Blast Video
@@ -694,6 +695,19 @@ Part B of docs/specs/AGENT_OPS_AUDIT_ELIJAH_V1_1.md:
 
 ---
 
+## S0 — SWITCHBOARD DATABASE  (`SWITCHBOARD_ADDENDUM_F_SEPARATE_DATABASE.md`)
+
+**You do first (about 5 minutes)**
+- Supabase dashboard → New project: name `switchboard`, Pro plan, region matching your Render service. Save the DB password in your password manager. Copy the **project ref** (not a secret) and give it to Claude Code.
+- Render → foundation-api-9gpl → Environment: `SWITCHBOARD_SUPABASE_URL`, `SWITCHBOARD_SUPABASE_SERVICE_ROLE_KEY`, `SWITCHBOARD_SUPABASE_JWT_SECRET`, `SWITCHBOARD_SUPABASE_ANON_KEY`, `SWITCHBOARD_PROJECT_REF`.
+- After the build: turn on daily backups and point-in-time recovery.
+
+**Paste into Claude Code:** the prompt in Addendum F, section F.8 (session header first).
+
+**Done when:** three seeded workspaces; cross-workspace reads fail; Foundation keys don't open the Switchboard project and vice versa; the API refuses to boot with identical URLs.
+
+---
+
 ## I — SWITCHBOARD, WEB  (`SWITCHBOARD_BUILD.md` + Addenda B and C)
 
 **You do first**
@@ -704,7 +718,7 @@ Part B of docs/specs/AGENT_OPS_AUDIT_ELIJAH_V1_1.md:
 **Paste into Claude Code** (session header first, then this)
 
 ```
-Foundation repo, branch foundation-dock. Same GLOBAL RULES as the Batch 1
+Foundation repo (API) + switchboard repo (front end and ALL Switchboard migrations, Addendum F), branch foundation-dock. Same GLOBAL RULES as the Batch 1
 master prompt (CLI migrations, live-schema introspection, gates, no secrets,
 protected areas). Read docs/specs/SWITCHBOARD_BUILD.md fully. Execute
 Phases 1→5 in order with a verify gate per phase:
@@ -745,6 +759,39 @@ ALSO IMPLEMENT (added after this prompt was written):
 - Embed works on Exterior Rescue's staff dashboard; locked-agent tap routes to pricing correctly
 - Spanish rendering with "ver original"; pin/unpin keeps the person in their category
 
+
+---
+
+## O — CONNECTED AGENTS  (`SWITCHBOARD_ADDENDUM_D_CONNECTED_AGENTS.md`)
+
+**What it is:** third-party, purchased-elsewhere, or self-built agents plug into Switchboard and join the buddy list and conversations. Webhook adapter first, A2A second. Read §D.3 before you promise anything to a customer: only agents that expose an API or protocol can be plugged in, and the OpenAI "Dots" do not have a confirmed public route yet.
+
+**You do first**
+- Decide §D.14 items 1–3 (launch timing, packaging, regulated clients). Defaults are written there; saying nothing accepts them.
+- Approve the "Connected agents" clause for the Switchboard ToS and privacy page (Claude Code drafts it; you or counsel approve).
+- Open `demo/switchboard-demo-v12.html`: click **Atlas** (a connected agent), then **+ Add an agent** at the bottom of the list.
+
+**Paste into Claude Code** (session header first, then the prompt in `SWITCHBOARD_ADDENDUM_D_CONNECTED_AGENTS.md` §D.13 — it is complete as written).
+
+**Done when**
+- Every test in §D.7 passes with output pasted into the completion report (cross-workspace isolation, scope enforcement, SSRF refusals, inert hostile replies, buttons never execute, circuit breaker, revocation)
+- A reference webhook agent from `EMBED_GUIDE_CONNECTED.md` connects in under 15 minutes and holds a conversation
+- A local A2A reference server connects, keeps multi-turn context, shows task status in the presence line, and pauses when its Agent Card changes
+- Every external message shows **Unverified**; none shows a receipt check
+- Connected agents cannot enter PTT channels or Eden threads (tested)
+
+---
+
+## Q — PRICING, SEATS AND BILLING  (`SWITCHBOARD_ADDENDUM_G_BILLING_AND_SEATS.md`)
+
+**You do first**
+- Stripe: create (or confirm) the account, switch to **test mode**, create a restricted key (Checkout, Customers, Subscriptions, Billing Portal, Prices read) and add `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` to Render. Claude Code creates the test products and prices itself.
+- Answer the six open questions in Addendum G, section G.10 (defaults are fine).
+- Live prices wait until the margin check (G.6) is done.
+
+**Paste into Claude Code:** the prompt in Addendum G, section G.9 (session header first).
+
+**Done when:** adding a 6th, 26th and 100th human changes the next test invoice by exactly $19, $17 and $14; replayed webhooks do nothing; guests never change the bill; failed-payment states work.
 
 ---
 

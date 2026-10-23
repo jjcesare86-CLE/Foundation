@@ -1,0 +1,39 @@
+# ENV VARS — Render `foundation-api-9gpl` (names only; never put values in git or chat)
+Updated Oct 22, 2026. Tick as you set them.
+
+## Set already (confirmed Sep 2)
+- [x] FOUNDATION_API_KEY (same value also on an-sales-pipeline, luts-api, delivered-web)
+- [x] CONNECTION_BROKER_ENCRYPTION_KEY
+- [x] ALLOWED_ORIGINS (add getswitchboard.io, www.getswitchboard.io, switchboard.automaitionnation.com, caleb.automaitionnation.com)
+- [x] SUPABASE_URL (Foundation, rhtwtoinmiekttvunlzs)
+
+## Phase 0
+- [ ] MODEL_ORCH_MAX=claude-fable-5-1
+- [ ] MODEL_COMPLEX=claude-opus-4-8
+- [ ] MODEL_STANDARD=claude-sonnet-5
+- [ ] MODEL_COMPLEX_ENTERPRISE=claude-fable-5-1
+
+## Item S0 — Switchboard database (Addendum F)
+- [ ] SWITCHBOARD_SUPABASE_URL
+- [ ] SWITCHBOARD_SUPABASE_SERVICE_ROLE_KEY   (server only)
+- [ ] SWITCHBOARD_SUPABASE_JWT_SECRET          (signs workspace JWTs)
+- [ ] SWITCHBOARD_SUPABASE_ANON_KEY            (public; needs a JWT to do anything)
+- [ ] SWITCHBOARD_PROJECT_REF                  (not secret)
+- [ ] SWITCHBOARD_DB_MODE=foundation           (flip to `switchboard` at cutover, F.9)
+- [ ] SWITCHBOARD_JWT_SECRET                   (existing Phase 1 API token; keep separate from the Supabase one)
+
+## Item Q — billing (Addendum G)
+- [ ] STRIPE_SECRET_KEY                (restricted key; test mode first)
+- [ ] STRIPE_WEBHOOK_SECRET
+- [ ] STRIPE_PRICE_SWITCHBOARD_PLATFORM, STRIPE_PRICE_SWITCHBOARD_SEAT (+ _ANNUAL versions)
+
+## Feature items
+- [ ] GOOGLE_MAPS_API_KEY            (before Silas/Zacchaeus/Rahab; Distance Matrix + Geocoding)
+- [ ] PIPELINE_API_KEY               (env audit item)
+- [ ] LIVEKIT_URL, LIVEKIT_API_KEY, LIVEKIT_API_SECRET   (Work Rooms, item P)
+- [ ] Speech-to-text provider key    (Work Rooms captions; provider not chosen yet)
+- [ ] APNS_* / FCM_*                 (push; with mobile and PTT, items K/L)
+- [ ] Google OAuth client id/secret for the Connections Hub (separate GCP OAuth client)
+
+## Confirm in the audit
+- [ ] ANTHROPIC_API_KEY (certainly set), Foundation service-role key (server only)
