@@ -46,7 +46,14 @@ git push
 | `docs/specs/ELIJAH_SCOREBOARD_BUILD.md` | Marketing scoreboard (item G) |
 | `docs/specs/SWITCHBOARD_*.md` | Switchboard web, tiers + specialization, native mobile, live PTT, naming (items I–M) |
 | `docs/state/` | CURRENT / DECISIONS / COSTS — living files Claude Code reads and updates |
-| `demo/switchboard-demo-v11.html` | Working front-end reference for Switchboard. Open in Chrome or Edge. |
+| `demo/switchboard-demo-v13.html` | **Current reference.** Everything in v12 plus Work Rooms (video icon in any chat; a live room with screen share, documents, guests, captions, recording, AI note-taker). |
+| `demo/switchboard-demo-v12.html` | Previous reference (connected agents, no Work Rooms). |
+| `demo/switchboard-demo-v11.html` | Previous reference (no connected agents). |
+| `docs/specs/SWITCHBOARD_ADDENDUM_E_WORK_ROOMS.md` | Work Rooms: live video/screen/document rooms, captions, AI note-taker, LiveKit, security, tests, Claude Code prompt. |
+| `docs/specs/SWITCHBOARD_ADDENDUM_F_SEPARATE_DATABASE.md` | **Switchboard gets its own Supabase project** (item S0): what lives where, JWT model, cross-project references, env vars, safety rules, Claude Code prompt. |
+| `docs/specs/SWITCHBOARD_ADDENDUM_G_BILLING_AND_SEATS.md` | Pricing ($149 incl. 5 seats; graduated extra seats), no separate Work Rooms price, groups/rooms start in conversations, Stripe design, fair use, margin check, Claude Code prompt. |
+| `docs/state/ENV_VARS.md` | Every Render env var by item, names only, with tick boxes. |
+| `docs/specs/SWITCHBOARD_ADDENDUM_D_CONNECTED_AGENTS.md` | Bring-your-own / third-party agents: adapters, security model, add flow, tests, Claude Code prompt. |
 | `assets/` | Logo (original + trimmed) |
 
 ## Demo v11 — what changed from v5

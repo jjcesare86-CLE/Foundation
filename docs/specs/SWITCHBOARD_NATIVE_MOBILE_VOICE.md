@@ -1,4 +1,7 @@
 # SWITCHBOARD — NATIVE MOBILE VOICE SPEC
+
+> **DATABASE (Oct 22, decided by John):** every `sb_*`, `ptt_*`, `work_room*` and `connected_agent*` table in this document lives in the **dedicated Switchboard Supabase project**, not Foundation. `workspace_id`/`client_id` references point to `sb_workspaces(id)` (mirror of Foundation `clients.id`). See `SWITCHBOARD_ADDENDUM_F_SEPARATE_DATABASE.md`.
+
 **Uninterrupted push-to-talk when the app isn't in front**
 v1.0 · Drop into docs/specs/ · Extends SWITCHBOARD_BUILD.md + v1.1
 
@@ -121,7 +124,7 @@ Your crews work in rural Chautauqua County. Signal drops. A voice message that v
 ```
 New repo: switchboard-mobile. Read docs/specs/SWITCHBOARD_NATIVE_MOBILE_VOICE.md.
 Same GLOBAL RULES as the Batch 1 master prompt (no secrets, verify gates
-between phases, Supabase project rhtwtoinmiekttvunlzs where relevant).
+between phases, the dedicated Switchboard Supabase project (Addendum F) for all Switchboard data).
 
 Phase 1: Scaffold a Capacitor app that loads the existing Switchboard web
 build. Implement VoiceBridge.capabilities() returning all-false stubs on web.

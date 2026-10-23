@@ -1,4 +1,7 @@
 # SWITCHBOARD — FLOATING AI EMPLOYEE MESSENGER
+
+> **DATABASE (Oct 22, decided by John):** every `sb_*`, `ptt_*`, `work_room*` and `connected_agent*` table in this document lives in the **dedicated Switchboard Supabase project**, not Foundation. `workspace_id`/`client_id` references point to `sb_workspaces(id)` (mirror of Foundation `clients.id`). See `SWITCHBOARD_ADDENDUM_F_SEPARATE_DATABASE.md`.
+
 **Build spec v1.0 · The AIM-style buddy list for all 34 employees, embeddable everywhere**
 Drop into docs/specs/ · Depends on: llm_router, prompt store, action library (Batch 1), connection_broker; benefits from Modules 2–4 (voice/playbook, interview, sliders)
 
@@ -59,7 +62,7 @@ Message path: Switchboard message → prompt composer (agent prompt + brand voic
 ```sql
 CREATE TABLE sb_threads (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  client_id UUID NOT NULL REFERENCES clients(id),
+  client_id UUID NOT NULL REFERENCES sb_workspaces(id),
   user_id UUID NOT NULL,
   agent_slug TEXT NOT NULL,
   last_message_at TIMESTAMPTZ,
@@ -76,14 +79,14 @@ CREATE TABLE sb_messages (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 CREATE TABLE sb_pins (
-  client_id UUID NOT NULL REFERENCES clients(id),
+  client_id UUID NOT NULL REFERENCES sb_workspaces(id),
   user_id UUID NOT NULL,
   agent_slug TEXT NOT NULL,
   sort_order INT DEFAULT 0,
   PRIMARY KEY (client_id, user_id, agent_slug)
 );
 CREATE TABLE sb_settings (
-  client_id UUID NOT NULL REFERENCES clients(id),
+  client_id UUID NOT NULL REFERENCES sb_workspaces(id),
   user_id UUID NOT NULL,
   corner TEXT DEFAULT 'bottom-left',
   hidden BOOLEAN DEFAULT FALSE,
@@ -192,7 +195,7 @@ The Foundation catalog (`foundation.ai_employees`) is shared — Silas is one de
 ### C.3 Membership
 ```sql
 CREATE TABLE IF NOT EXISTS sb_memberships (
-  workspace_id UUID NOT NULL REFERENCES clients(id),
+  workspace_id UUID NOT NULL REFERENCES sb_workspaces(id),
   user_id UUID NOT NULL,
   role TEXT NOT NULL DEFAULT 'member',      -- owner | admin | member | guest
   display_title TEXT,                        -- the optional title shown under their name, per workspace

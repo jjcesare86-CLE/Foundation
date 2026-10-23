@@ -1,4 +1,7 @@
 # CONVERSATION DISCIPLINE — HARD RULES FOR EVERY AGENT
+
+> **DATABASE (Oct 22, decided by John):** every `sb_*`, `ptt_*`, `work_room*` and `connected_agent*` table in this document lives in the **dedicated Switchboard Supabase project**, not Foundation. `workspace_id`/`client_id` references point to `sb_workspaces(id)` (mirror of Foundation `clients.id`). See `SWITCHBOARD_ADDENDUM_F_SEPARATE_DATABASE.md`.
+
 **Added Sep 4, 2026 after this exchange in the demo:**
 
 > Marcus: Want me to price the repair while I'm up here or come back Thursday?

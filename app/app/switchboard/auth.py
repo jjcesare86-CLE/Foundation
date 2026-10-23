@@ -27,6 +27,7 @@ import jwt
 from fastapi import Header, HTTPException
 
 from app.database import supabase
+from app.switchboard import repo, switchboard_db
 
 SWITCHBOARD_JWT_SECRET = os.getenv("SWITCHBOARD_JWT_SECRET")
 SWITCHBOARD_JWT_TTL_SECONDS = 60 * 60  # "short-lived" per spec §3.1
@@ -81,7 +82,7 @@ def resolve_workspace(user_id: str, email: Optional[str]) -> dict:
     rows have no contact_email at all — flagged in DECISIONS.md, not
     silently papered over), and we say so rather than fabricate access."""
     existing = (
-        supabase.schema("foundation").table("sb_memberships")
+        repo.table("sb_memberships")
         .select("*").eq("user_id", user_id).is_("revoked_at", "null")
         .order("joined_at", desc=True).limit(1).execute().data
     )
@@ -94,8 +95,10 @@ def resolve_workspace(user_id: str, email: Optional[str]) -> dict:
             .select("id").eq("contact_email", email).execute().data
         )
         if len(match) == 1:
+            if switchboard_db.db_mode() == "switchboard":
+                repo.sync_workspace(match[0]["id"])
             row = {"workspace_id": match[0]["id"], "user_id": user_id, "role": "owner"}
-            supabase.schema("foundation").table("sb_memberships").insert(row).execute()
+            repo.table("sb_memberships").insert(row).execute()
             return row
 
     raise SwitchboardAuthError(
@@ -143,4 +146,10 @@ async def require_switchboard_auth(authorization: Optional[str] = Header(None)) 
         claims = verify_switchboard_jwt(token)
     except SwitchboardAuthError as e:
         raise HTTPException(e.status, e.detail)
+    try:
+        status = repo.ensure_workspace(claims["workspace_id"])
+    except switchboard_db.SwitchboardConfigError as e:
+        raise HTTPException(503, str(e))
+    if status != "active":
+        raise HTTPException(403, "this workspace is not active")
     return claims

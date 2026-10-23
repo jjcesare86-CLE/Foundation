@@ -1,4 +1,7 @@
 # SWITCHBOARD v1.1 — TWO-TIER ACCESS + INDUSTRY SPECIALIZATION ENGINE
+
+> **DATABASE (Oct 22, decided by John):** every `sb_*`, `ptt_*`, `work_room*` and `connected_agent*` table in this document lives in the **dedicated Switchboard Supabase project**, not Foundation. `workspace_id`/`client_id` references point to `sb_workspaces(id)` (mirror of Foundation `clients.id`). See `SWITCHBOARD_ADDENDUM_F_SEPARATE_DATABASE.md`.
+
 **Replaces Section 1 (Locked Decisions) and adds the specialization layer to SWITCHBOARD_BUILD.md**
 Drop into docs/specs/
 
@@ -230,7 +233,8 @@ every new vertical is instantly available to every future client in that niche.
 → "These aren't generic bots. They already know your world."
 
 ### Pricing (Tier B clients):
-- **Switchboard platform fee:** $149/mo (includes 5 agent seats — the filtered
+- **PRICING NOW DEFINED IN ADDENDUM G (Oct 23): 5 included seats are HUMAN employees only; extra seats $19/$17/$14 graduated; annual = 2 months free. AI employees a customer pays for are on Switchboard at no extra charge.**
+- **Switchboard platform fee:** $149/mo (earlier wording: includes 5 agent seats — the filtered
   recommended roster for their niche). Additional agents à la carte per the
   existing pricing engine.
 - **OR** bundled into Professional ($499/mo, 10 agents) / Enterprise ($1,499/mo,
