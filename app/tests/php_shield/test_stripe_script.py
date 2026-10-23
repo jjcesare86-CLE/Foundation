@@ -102,3 +102,58 @@ def test_dry_run_needs_no_key_and_makes_no_calls(monkeypatch, capsys):
     assert script.main(["--dry-run"]) == 0
     out = capsys.readouterr().out
     assert "$300.00" in out and "$750.00" in out and "$1,500.00" in out and "$99.00" in out and "/month" in out
+
+
+# -- webhook endpoint creation ---------------------------------------------------
+
+WEBHOOK = "https://php-shield-api.onrender.com/php-shield/stripe/webhook"
+
+
+def _with_webhooks(fake, existing=()):
+    class WebhookEndpoint:
+        created = []
+
+        @staticmethod
+        def list(limit):
+            return _List(list(existing))
+
+        @staticmethod
+        def create(**p):
+            WebhookEndpoint.created.append(p)
+            return {"id": "we_new", "secret": "whsec_new_secret"}
+
+    fake.WebhookEndpoint = WebhookEndpoint
+    return WebhookEndpoint
+
+
+def test_webhook_endpoint_created_with_the_three_events_and_secret_printed(monkeypatch, capsys):
+    monkeypatch.setenv("STRIPE_SECRET_KEY", "sk_test_abc")
+    fake = FakeStripe()
+    we = _with_webhooks(fake)
+    assert script.main(["--webhook-url", WEBHOOK], stripe_module=fake) == 0
+    assert we.created == [{"url": WEBHOOK, "enabled_events": ["checkout.session.completed", "invoice.paid", "customer.subscription.deleted"],
+                           "description": "PHP Shield"}]
+    out = capsys.readouterr().out
+    assert "STRIPE_WEBHOOK_SECRET=whsec_new_secret" in out and '$env:STRIPE_WEBHOOK_SECRET = "whsec_new_secret"' in out
+
+
+def test_existing_webhook_endpoint_is_not_duplicated_and_user_is_told_how_to_get_the_secret(monkeypatch, capsys):
+    monkeypatch.setenv("STRIPE_SECRET_KEY", "sk_test_abc")
+    fake = FakeStripe()
+    we = _with_webhooks(fake, existing=[{"id": "we_old", "url": WEBHOOK}])
+    assert script.main(["--webhook-url", WEBHOOK], stripe_module=fake) == 0
+    out = capsys.readouterr().out
+    assert not we.created and "STRIPE_WEBHOOK_SECRET=" not in out and "Reveal" in out
+
+
+def test_webhook_url_must_be_https(monkeypatch):
+    monkeypatch.setenv("STRIPE_SECRET_KEY", "sk_test_abc")
+    fake = FakeStripe()
+    assert script.main(["--webhook-url", "http://insecure.example/hook"], stripe_module=fake) == 2
+    assert not fake.created_prices
+
+
+def test_dry_run_mentions_webhook_without_calling_stripe(monkeypatch, capsys):
+    monkeypatch.delenv("STRIPE_SECRET_KEY", raising=False)
+    assert script.main(["--dry-run", "--webhook-url", WEBHOOK]) == 0
+    assert "would create webhook endpoint" in capsys.readouterr().out

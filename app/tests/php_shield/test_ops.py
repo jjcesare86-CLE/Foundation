@@ -226,11 +226,12 @@ def test_render_blueprint_declares_every_required_var_for_the_api():
     import pathlib
     import yaml
 
-    d = yaml.safe_load((pathlib.Path(__file__).parents[2] / "render.yaml").read_text(encoding="utf-8"))
+    d = yaml.safe_load((pathlib.Path(__file__).parents[3] / "render.php-shield.yaml").read_text(encoding="utf-8"))
     svc = {s["name"]: s for s in d["services"]}
     api_vars = {v["key"] for v in svc["php-shield-api"]["envVars"]}
     cron_vars = {v["key"] for v in svc["php-shield-monthly-rescan"]["envVars"]}
     assert set(config.REQUIRED_IN_PRODUCTION) <= api_vars, set(config.REQUIRED_IN_PRODUCTION) - api_vars
     assert set(config.CRON_REQUIRED) <= cron_vars
     assert svc["php-shield-api"]["healthCheckPath"] == "/health"
+    assert svc["php-shield-api"]["rootDir"] == "app" and svc["php-shield-monthly-rescan"]["rootDir"] == "app"
     assert "app.php_shield_main:app" in svc["php-shield-api"]["startCommand"]

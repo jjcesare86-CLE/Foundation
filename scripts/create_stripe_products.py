@@ -4,6 +4,8 @@ Create PHP Shield's Stripe products and prices, then print the env vars to set.
     python scripts/create_stripe_products.py            # TEST mode (default; needs an sk_test_ key)
     python scripts/create_stripe_products.py --live     # LIVE mode (needs an sk_live_ key)
     python scripts/create_stripe_products.py --dry-run  # show what would be created, call nothing
+    python scripts/create_stripe_products.py --webhook-url https://<service>/php-shield/stripe/webhook
+                                                        # ALSO create the webhook endpoint and print its signing secret
 
 Amounts come from app/app/php_shield/tiers.yaml (the same file the site shows prices from), so
 the two cannot drift. The key is read from the STRIPE_SECRET_KEY environment variable only.
@@ -62,15 +64,34 @@ def ensure_price(stripe, spec: dict) -> tuple[str, str]:
     return stripe.Price.create(**params)["id"], "created"
 
 
+WEBHOOK_EVENTS = ["checkout.session.completed", "invoice.paid", "customer.subscription.deleted"]
+
+
+def ensure_webhook(stripe, url: str) -> tuple[str, str | None]:
+    """Returns (endpoint_id, signing_secret). Stripe only reveals the secret when the endpoint is
+    created, so for an endpoint that already exists the secret is None."""
+    for ep in stripe.WebhookEndpoint.list(limit=100).data:
+        if ep["url"] == url:
+            return ep["id"], None
+    ep = stripe.WebhookEndpoint.create(url=url, enabled_events=WEBHOOK_EVENTS, description="PHP Shield")
+    return ep["id"], ep["secret"]
+
+
 def main(argv=None, stripe_module=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--live", action="store_true", help="use LIVE mode (default is test mode)")
     ap.add_argument("--dry-run", action="store_true", help="print the plan; make no Stripe calls")
+    ap.add_argument("--webhook-url", help="also create the webhook endpoint at this URL (must be https)")
     args = ap.parse_args(argv)
     specs = load_amounts()
+    if args.webhook_url and not args.webhook_url.startswith("https://"):
+        print("--webhook-url must be an https:// URL.", file=sys.stderr)
+        return 2
 
     if args.dry_run:
         print(f"# DRY RUN ({'live' if args.live else 'test'} mode) - nothing will be created\n")
+        if args.webhook_url:
+            print(f"(would create webhook endpoint {args.webhook_url} for: {', '.join(WEBHOOK_EVENTS)})\n")
         for s in specs.values():
             print(f"{s['name']:<34} {money(s['amount']):>9}{' /month' if s['recurring'] else ' one-time'}   lookup_key={s['lookup_key']}")
         return 0
@@ -96,12 +117,22 @@ def main(argv=None, stripe_module=None) -> int:
         results[env_name] = price_id
         print(f"  {action:<8} {spec['name']:<32} {money(spec['amount']):>9}  {price_id}")
 
+    if args.webhook_url:
+        ep_id, secret = ensure_webhook(stripe_module, args.webhook_url)
+        if secret:
+            results["STRIPE_WEBHOOK_SECRET"] = secret
+            print(f"\n  created  webhook endpoint {ep_id} -> {args.webhook_url}")
+        else:
+            print(f"\n  exists   webhook endpoint {ep_id} -> {args.webhook_url}\n"
+                  "           Stripe only shows a signing secret when an endpoint is created. To get this one:\n"
+                  "           Stripe Dashboard -> Developers -> Webhooks -> this endpoint -> Signing secret -> Reveal.")
+
     print("\nSet these environment variables (Render -> php-shield-api -> Environment):\n")
-    for env_name, price_id in results.items():
-        print(f"{env_name}={price_id}")
+    for env_name, value in results.items():
+        print(f"{env_name}={value}")
     print("\nPowerShell (local):")
-    for env_name, price_id in results.items():
-        print(f'  $env:{env_name} = "{price_id}"')
+    for env_name, value in results.items():
+        print(f'  $env:{env_name} = "{value}"')
     return 0
 
 
