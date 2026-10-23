@@ -17,7 +17,7 @@ import secrets
 from typing import Optional
 
 from app.php_shield import agreement, netsafe, notify, tiers
-from app.php_shield.ops import guarded_write
+from app.php_shield.ops import WriteFailed, guarded_write
 from app.php_shield.pdf import signed_agreement_pdf
 from app.php_shield.store import StoreConflict, StoreRejected, iso
 
@@ -143,9 +143,14 @@ def transition(svc, order_id: str, to: str, actor: str, note: Optional[str] = No
     if to == "closed":
         full_patch["closed_at"] = iso()
     try:
-        rows = svc.store.update("orders", full_patch, id=order_id, status=cur)  # status in WHERE = optimistic lock
-    except StoreRejected as e:  # DB backstop fired
-        raise GateError(str(e)) from e
+        # status in the WHERE clause = optimistic lock. Wrapped so a database failure is logged,
+        # dead-lettered and alerted like every other write -- never a bare 500.
+        rows = guarded_write(svc, "order_status", {"order": order_id, "from": cur, "to": to, "actor": actor},
+                             lambda: svc.store.update("orders", full_patch, id=order_id, status=cur), {"order": order_id})
+    except WriteFailed as wf:
+        if isinstance(wf.__cause__, StoreRejected):  # the DB backstop fired: the app-level gate missed something
+            raise GateError(str(wf.__cause__)) from wf.__cause__
+        raise
     if not rows:
         raise OrderError("order changed concurrently; retry", 409)
     updated = rows[0]

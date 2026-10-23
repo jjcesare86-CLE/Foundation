@@ -338,3 +338,39 @@ def test_one_failing_subscription_does_not_stop_the_batch(client, svc):
                                        "customer_email": "x@x.com", "status": "active", "next_scan_at": iso(utcnow() - timedelta(days=2))})
     s = maintenance.run_monthly(svc, scanner=rescan("7.4.33"))
     assert s["errors"] == 1 and s["scanned"] == 1
+
+
+def test_status_update_failure_is_dead_lettered_and_alerted_not_a_bare_500(client, svc, tmp_path):
+    from app.php_shield.ops import WriteFailed
+    from app.php_shield.store import StoreError
+
+    o = paid_order(svc)
+    real = svc.store.update
+
+    def failing(table, patch, **eq):
+        if table == "orders" and patch.get("status") == "intake_complete":
+            raise StoreError("connection reset")
+        return real(table, patch, **eq)
+
+    svc.store.insert("intake", {"order_id": o["id"], "site_url": "https://example.com"})  # precondition for the gate
+    svc.store.update = failing
+    with pytest.raises(WriteFailed):
+        orders.transition(svc, o["id"], "intake_complete", "customer")
+    assert '"kind": "order_status"' in (tmp_path / "dead.jsonl").read_text()
+    assert any("order_status write FAILED" in m["subject"] for m in svc.mailer.sent)
+    assert svc.store.select("orders", id=o["id"])[0]["status"] == "paid"  # nothing half-applied
+
+
+def test_db_backstop_rejection_surfaces_as_a_gate_error(client, svc):
+    from app.php_shield.store import StoreRejected
+
+    o = paid_order(svc)
+    svc.store.insert("intake", {"order_id": o["id"], "site_url": "https://example.com"})
+
+    def rejecting(table, patch, **eq):
+        raise StoreRejected("illegal order transition (database trigger)")
+
+    svc.store.update = rejecting
+    with pytest.raises(orders.GateError, match="database trigger"):
+        orders.transition(svc, o["id"], "intake_complete", "customer")
+

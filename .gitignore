@@ -13,3 +13,7 @@ node_modules/
 supabase/.temp/
 .unlazy/
 .unlazy-hook-state.json
+
+# PHP Shield local dead-letter files (may contain customer emails)
+dead_letters/
+*.jsonl

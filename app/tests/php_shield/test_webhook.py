@@ -115,7 +115,7 @@ def test_failed_processing_releases_the_event_so_stripe_retries(client, svc):
     real = svc.store.update
     svc.store.update = lambda *a, **k: (_ for _ in ()).throw(RuntimeError("db hiccup"))
     r = post(client, completed_event(order))
-    assert r.status_code == 500
+    assert r.status_code == 503  # non-2xx: Stripe will redeliver (was a bare 500 before writes were guarded)
     assert not svc.store.select("webhook_events")  # not recorded -> the retry will be processed
     svc.store.update = real
     assert post(client, completed_event(order)).json()["result"] == "paid"
