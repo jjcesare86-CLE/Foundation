@@ -5,7 +5,7 @@
 
 ## THE ONE-LINE VERSION
 
-Phase 0 → A → B → D → C → E → H → F → G → I → J → K → L → M.
+Phase 0 → A → B → D → C → E → H → F → G → **S0** → I → **Q** → J → **P** → **O** → K → L → M.
 Paste the session header (`01_PROJECT_REF_CORRECTION.md`) first, every time.
 
 ---
@@ -23,7 +23,9 @@ Paste the session header (`01_PROJECT_REF_CORRECTION.md`) first, every time.
 | **H** | (Batch 2 + 3 specs — to be written when B is green) | Obadiah, Bezalel, Priscilla, Amos, Tabitha | B | L |
 | **F** | `AUTOPILOT_NUANCES_IMPLEMENTATION.md` | Preflight, brand-voice/playbook engine, interview engine, behavioral sliders | C, E | L |
 | **G** | `ELIJAH_SCOREBOARD_BUILD.md` + Ops Audit Part B | Marketing scoreboard, calls + web traffic | C, D | L |
+| **S0** | `SWITCHBOARD_ADDENDUM_F_SEPARATE_DATABASE.md` | Dedicated Switchboard Supabase project: `sb_workspaces`, core `sb_*` tables with RLS, second DB client in Foundation API, workspace JWT mint | A | S–M |
 | **I** | `SWITCHBOARD_BUILD.md` | Switchboard, web — the buddy list, threads, receipts as DMs | B, C, E | XL |
+| **Q** | `SWITCHBOARD_ADDENDUM_G_BILLING_AND_SEATS.md` | Seat-based pricing ($149 incl. 5 seats; graduated extra seats), Stripe webhook + seat sync, group chats / "Add person", fair-use meters | I, S0, A | M |
 | **J** | `SWITCHBOARD_V1_1_TIERS_AND_SPECIALIZATION.md` | Two-tier access; industry playbooks (extend the existing `industries` tables) | F, I | L |
 | **K** | `SWITCHBOARD_NATIVE_MOBILE_VOICE.md` phases 1–4 | Capacitor shell, background mic, offline queue | I | XL |
 | **L** | `SWITCHBOARD_ADDENDUM_A_LIVE_PTT.md` | Two-way PTT channels, relay, agents transmitting | K | XL |

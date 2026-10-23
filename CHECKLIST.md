@@ -98,6 +98,26 @@ _Tick as you go. Each item's VERIFY gate is in its spec. Never start the next it
 - [ ] `switchboard.automaitionnation.com` live, HTTPS, Lighthouse ≥ 90
 - [ ] Security page live; both subdomains in `ALLOWED_ORIGINS`
 
+## O — Connected agents (`SWITCHBOARD_ADDENDUM_D_CONNECTED_AGENTS.md`)
+- [ ] Decisions made or defaults accepted (§D.14); ToS/privacy clause approved
+- [ ] **Q — Billing and seats (Addendum G):** seat counting; test-mode Stripe products; webhook verified + idempotent; $19/$17/$14 tier math proven; fair-use meters; margin check G.6 done before live prices
+- [ ] O0 (inside I): `sb_participants` + `participant_id` backfilled; EX chip, rose group, dashed edge render
+- [ ] (O0–O3 are ALL launch blockers — decided Oct 13)
+- [ ] O1: webhook adapter, 3-step add flow, scopes enforced server-side, egress log, SSRF guard, redaction, circuit breaker
+- [ ] O1: `EMBED_GUIDE_CONNECTED.md` + reference agent connects in < 15 min
+- [ ] O2: A2A adapter, card-hash pinning, task status in presence line
+- [ ] §D.7 test list green, output pasted; Unverified tag on every external message
+- [ ] No connected agent in PTT or Eden (tested)
+
+## P — Work Rooms — IN LAUNCH SCOPE (`SWITCHBOARD_ADDENDUM_E_WORK_ROOMS.md`)
+- [ ] Decisions made or defaults accepted (§E.12); repo review done (§E.3)
+- [ ] P0 (inside I): WR chip, teal hue, LIVE badge, `workroom` participant kind
+- [ ] P1: LiveKit token mint, voice/video/chat/host controls, desktop screen share, metering, tenancy tests
+- [ ] P2: document sharing, mobile audio-first + camera share, guest invites
+- [ ] P3: translated captions, transcript, AI note-taker → approved action items
+- [ ] P4: recording with consent + 30-day expiry
+- [ ] §E.7 test list green, output pasted
+
 ## K — Native mobile, phases 1–4 (`SWITCHBOARD_NATIVE_MOBILE_VOICE.md`)
 - [ ] Apple PTT entitlement request FILED (day one of K)
 - [ ] Capacitor shell + capability detection

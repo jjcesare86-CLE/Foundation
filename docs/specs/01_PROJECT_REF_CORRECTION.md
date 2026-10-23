@@ -25,7 +25,8 @@ spec disagrees with it, 00_STATE wins. Where 00_STATE disagrees with the live
 database, the live database wins — and update 00_STATE.
 
 Full project map (reference only):
-  rhtwtoinmiekttvunlzs = Foundation          ← all agent / Switchboard / playbook work goes HERE
+  rhtwtoinmiekttvunlzs = Foundation          ← agent catalog, router, broker, receipts, playbooks. NOT Switchboard customer data
+  <SWITCHBOARD_REF>    = Switchboard         ← ALL sb_*, ptt_*, work_room*, connected_agent* tables (own project, own repo `switchboard`; Addendum F). John supplies the ref at S0.1
   rzsryxvlaezfvftqpvbx = Automation Nation   ← AN sales pipeline + homepage only
   xgaqgqkycckolwfcrmop = VoiceMIO
   qstcxqytmaqkygdiacfd = Blast Video
