@@ -58,3 +58,8 @@
 - 2026-10-22: Addendum F gains F.9: Phase 1 sb_* tables already live in Foundation are NOT dropped; dual-mode API (SWITCHBOARD_DB_MODE), copy/re-seed, flip, rename to _legacy after 14 days, drop only on John's explicit approval.
 - 2026-10-23: Pricing (John): Work Rooms have NO separate price; groups/rooms start inside conversations. $149/mo includes 5 seats; extra seats graduated $19 (6-25), $17 (26-99), $14 (100-249), 250+ custom. Seats = humans. Fair-use pooled minutes, no overage billing at launch. Margin check G.6 before publishing. New item Q.
 - 2026-10-23: John confirmed: annual billing = 2 months free ($1,490/yr platform; seats x10 per year). Seats are human employees only; paid AI employees are covered by their own fee and never use or pay for a seat.
+
+## 2026-10-23 autopilot
+- Package docs synced by three-way merge (base = old package, ours = repo, theirs = new package), not blind overwrite, to keep repo-side edits (the 2026-09-09 `/employees/` sweep, state logs, the S0 checklist section). Foundation's `CURRENT.md`/`DECISIONS.md` keep both sides; the package's old state-file text is not authoritative.
+- Run order is now: ... G -> S0 -> I -> Q -> J -> P -> O -> N. S0 was already built and verified on 2026-10-22 (switchboard PR #2, Foundation S0 PR); only the steps needing John remain.
+- Item Q rules for this run: Stripe TEST MODE ONLY, no live prices, no keys printed. A seat is an active human membership (owner/admin/member) only; AI employees, connected agents, Work Room guests and Tier A properties never count (Addendum G.2).

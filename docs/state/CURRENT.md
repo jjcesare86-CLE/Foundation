@@ -38,3 +38,4 @@ See `docs/specs/00_STATE_OF_THE_BUILD.md` (rewritten 2026-09-09 — 35 agents, c
 - 2026-10-13: Addendum D (Connected Agents) specced + demo v12. Build phase O0 inside item I; O1–O3 later. Awaiting John's §D.14 decisions (defaults stand).
 
 - 2026-10-22: Switchboard data -> own Supabase project (Addendum F, item S0). Needs from John: project ref + five SWITCHBOARD_* Render vars.
+- 2026-10-23: package updated (Addendum G billing/seats = item Q; ENV_VARS.md). Docs synced into both repos on `sb/docs-package-2026-10-23`. `ENV_NEEDED.md` and `BLOCKED_ON_JOHN.md` rewritten to match `ENV_VARS.md`. Order: ... G -> S0 -> I -> Q -> J -> P -> O -> N.
