@@ -4,7 +4,7 @@ from fastapi import FastAPI, Depends, Security, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import APIKeyHeader
 
-from app.routers import skills, brand, clients, templates, employees, voice_employee_builder, research, actions, rahab, zacchaeus, silas, ops, connections
+from app.routers import skills, brand, clients, templates, employees, voice_employee_builder, research, actions, rahab, zacchaeus, silas, ops, connections, php_shield
 from app.foundation_agents import router as agents_router
 from app.gemini_voice_proxy import router as voice_router
 from app.voice_edit.router import router as voice_edit_router
@@ -85,6 +85,10 @@ app.include_router(ops.router, dependencies=[Depends(require_api_key)])
 # by the more generic /connections/{client_id} pattern.
 app.include_router(connections.router)
 app.include_router(connections.admin_router, dependencies=[Depends(require_api_key)])
+# PHP Shield: free scan/report is public (marketing-site scan box); lead
+# lookup is gated.
+app.include_router(php_shield.router)
+app.include_router(php_shield.admin_router, dependencies=[Depends(require_api_key)])
 # Switchboard is public (browser-facing, on client sites) -- gated per-endpoint
 # by its own require_switchboard_auth dependency, not the internal API key.
 app.include_router(switchboard_router)
