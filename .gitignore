@@ -16,4 +16,3 @@ supabase/.temp/
 
 # PHP Shield local dead-letter files (may contain customer emails)
 dead_letters/
-*.jsonl

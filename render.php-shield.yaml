@@ -3,7 +3,8 @@
 # Deploy: Render dashboard -> New -> Blueprint -> pick the Foundation repo and branch ->
 #         set "Blueprint file path" to  render.php-shield.yaml  -> fill in the variables it asks for.
 # Apply supabase-php-shield/migrations/*.sql to PHP Shield's OWN Supabase project BEFORE first deploy.
-# The API refuses to boot in production if a required variable is missing (see app/php_shield/config.py).
+# Optional extras (not listed so Render doesn't demand a value): add TURNSTILE_SECRET and SLACK_WEBHOOK_URL
+# in the dashboard if you want them. The API refuses to boot in production if a required variable is missing (see app/php_shield/config.py).
 services:
   - type: web
     name: php-shield-api
@@ -43,10 +44,6 @@ services:
         generateValue: true
       - key: PHP_SHIELD_IP_HASH_SALT
         generateValue: true
-      - key: TURNSTILE_SECRET        # optional: leave blank to disable the bot challenge
-        sync: false
-      - key: SLACK_WEBHOOK_URL       # optional: extra alert channel (Slack/Discord-compatible)
-        sync: false
 
   # Runs daily; each Maintenance Plan subscription is rescanned about every 30 days.
   - type: cron
