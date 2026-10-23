@@ -1,0 +1,70 @@
+# PHP Shield -- Render blueprint (its own services; does not touch foundation-api or any other service).
+#
+# Deploy: Render dashboard -> New -> Blueprint -> pick the Foundation repo and branch ->
+#         set "Blueprint file path" to  render.php-shield.yaml  -> fill in the variables it asks for.
+# Apply supabase-php-shield/migrations/*.sql to PHP Shield's OWN Supabase project BEFORE first deploy.
+# Optional extras (not listed so Render doesn't demand a value): add TURNSTILE_SECRET and SLACK_WEBHOOK_URL
+# in the dashboard if you want them. The API refuses to boot in production if a required variable is missing (see app/php_shield/config.py).
+services:
+  - type: web
+    name: php-shield-api
+    runtime: python
+    rootDir: app
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.php_shield_main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PHP_SHIELD_ENV
+        value: production
+      - key: PHP_SHIELD_SITE_URL
+        value: https://automaitionnation.com
+      - key: PHP_SHIELD_SUPABASE_URL
+        sync: false
+      - key: PHP_SHIELD_SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_PRICE_PHPSHIELD_BASIC
+        sync: false
+      - key: STRIPE_PRICE_PHPSHIELD_STANDARD
+        sync: false
+      - key: STRIPE_PRICE_PHPSHIELD_COMPLEX
+        sync: false
+      - key: STRIPE_PRICE_PHPSHIELD_MAINTENANCE
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: PHP_SHIELD_OWNER_EMAIL
+        sync: false
+      - key: PHP_SHIELD_FROM_EMAIL
+        value: PHP Shield <shield@automaitionnation.com>
+      - key: PHP_SHIELD_ADMIN_API_KEY
+        generateValue: true
+      - key: PHP_SHIELD_IP_HASH_SALT
+        generateValue: true
+
+  # Runs daily; each Maintenance Plan subscription is rescanned about every 30 days.
+  - type: cron
+    name: php-shield-monthly-rescan
+    runtime: python
+    rootDir: app
+    buildCommand: pip install -r requirements.txt
+    schedule: "0 14 * * *"
+    startCommand: python scripts/php_shield_monthly_rescan.py
+    envVars:
+      - key: PHP_SHIELD_ENV
+        value: production
+      - key: PHP_SHIELD_SITE_URL
+        value: https://automaitionnation.com
+      - key: PHP_SHIELD_SUPABASE_URL
+        sync: false
+      - key: PHP_SHIELD_SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: PHP_SHIELD_OWNER_EMAIL
+        sync: false
+      - key: PHP_SHIELD_FROM_EMAIL
+        value: PHP Shield <shield@automaitionnation.com>

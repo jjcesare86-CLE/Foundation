@@ -75,3 +75,24 @@ def render_report(result: ScanResult, site_name: Optional[str] = None) -> str:
   <a class="cta" href="https://automaitionnation.com">Get my site fixed</a>
   <p class="muted" style="margin-top:32px">This report is based only on publicly visible signals from ordinary page requests. No login or exploitation was attempted.</p>
 </div></body></html>"""
+
+
+def _risk_cell(scan: dict) -> str:
+    risk = (scan or {}).get("risk") or {}
+    level = risk.get("risk_level", "unknown")
+    color = BADGE_COLORS.get(level, BADGE_COLORS["unknown"])
+    version = (scan or {}).get("version") or "not detected"
+    return (f'<td style="padding:10px;border:1px solid #ddd"><b style="color:{color};text-transform:uppercase">'
+            f'{escape(level)}</b><br>PHP {escape(str(version))}</td>')
+
+
+def render_comparison(before: dict, after: dict, domain: str) -> str:
+    """Email-safe before/after table (light theme: renders in any mail client)."""
+    return (
+        f'<p><b>{escape(domain)}</b></p>'
+        '<table style="border-collapse:collapse;width:100%"><tr>'
+        '<th style="padding:10px;border:1px solid #ddd;text-align:left">Before</th>'
+        '<th style="padding:10px;border:1px solid #ddd;text-align:left">After</th></tr>'
+        f'<tr>{_risk_cell(before)}{_risk_cell(after)}</tr></table>'
+        f'<p style="color:#555;font-size:13px">{escape(((after or {}).get("risk") or {}).get("headline", ""))}</p>'
+    )
