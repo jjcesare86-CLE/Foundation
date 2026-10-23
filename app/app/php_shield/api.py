@@ -122,7 +122,7 @@ def scan(body: ScanIn, request: Request):
     try:
         target = netsafe.validate_url(netsafe.normalize_user_url(body.url))
     except netsafe.UnsafeURL as e:
-        raise HTTPException(400, f"That URL can't be scanned: {e}")
+        raise HTTPException(400, f"That URL can't be scanned: {e}") from None
     domain = netsafe.registrable_host(target.host)
 
     s.limiter.check_and_record(ip, domain)  # RateLimited -> 429 (handler in app factory)
