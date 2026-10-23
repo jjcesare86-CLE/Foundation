@@ -37,3 +37,14 @@ Updated Oct 22, 2026. Tick as you set them.
 
 ## Confirm in the audit
 - [ ] ANTHROPIC_API_KEY (certainly set), Foundation service-role key (server only)
+
+## PHP Shield (merged PR #4) — no new vars of its own
+- [ ] ALLOWED_ORIGINS — add https://automaitionnation.com and https://www.automaitionnation.com (browser scan box; default is localhost-only)
+- [ ] SUPABASE_SERVICE_ROLE_KEY — lead insert; failures are swallowed, so a missing key silently drops leads
+- [ ] FOUNDATION_API_KEY — admin `GET /php-shield/leads/{id}` (already listed above)
+- [ ] Apply migration `*_php_shield_schema.sql` + seed `sql/seeds/003_php_shield_agent.sql`
+
+## Defaults that are wrong or insecure in production
+- [ ] VOICE_EDIT_HANDOFF_SECRET — code default is the literal "CHANGE-ME-IN-RENDER"
+- [ ] SUPABASE_SERVICE_KEY — voice_employee_builder reads this name, not SUPABASE_SERVICE_ROLE_KEY; set both to the same value
+- [ ] sql/run_migrations.py hardcodes a Supabase access token as the default for SUPABASE_ACCESS_TOKEN in this PUBLIC repo — revoke it in Supabase and remove the default
