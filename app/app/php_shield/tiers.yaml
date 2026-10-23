@@ -1,0 +1,67 @@
+# PHP Shield -- tiers, prices and recommendation thresholds.
+# EDIT THIS FILE to change what the report page recommends. No code changes needed.
+#
+# Prices here are DISPLAY prices. What a customer is actually charged is the Stripe
+# price behind STRIPE_PRICE_PHPSHIELD_* (created by scripts/create_stripe_products.py,
+# which reads these same numbers) -- keep the two in step by re-running that script.
+
+tiers:
+  basic:
+    name: Basic Fix
+    price_cents: 30000
+    description: A straightforward PHP version upgrade for a simple, current site.
+    features:
+      - Full backup before any change
+      - PHP upgraded to a supported version
+      - Core and plugins updated for compatibility
+      - Before/after security rescan
+  standard:
+    name: Standard Fix
+    price_cents: 75000
+    description: A larger version jump or a site with several plugins and customizations.
+    features:
+      - Everything in Basic
+      - Staging copy tested before go-live
+      - Plugin and theme compatibility fixes
+      - Dependency and library patching
+      - Rollback verified
+  complex:
+    name: Complex Fix
+    price_cents: 150000
+    description: Legacy PHP, heavy customization, or a multi-version jump that needs real remediation.
+    features:
+      - Everything in Standard
+      - Custom code audited and ported for modern PHP
+      - Deprecated functions and removed extensions replaced
+      - Extended post-fix monitoring window
+      - Priority scheduling
+
+maintenance:
+  name: Maintenance Plan
+  price_cents: 9900
+  description: Monthly rescans, patching and monitoring so you never fall behind again.
+  features:
+    - Monthly automated security rescan, emailed to you
+    - Immediate alert on any new critical finding
+    - Updates and patching handled for you
+    - Cancel any time
+
+# Recommendation scoring. Points are added up, then compared to the thresholds below.
+scoring:
+  risk_level:          # from the PHP end-of-life database
+    critical: 2        # past security-support end
+    high: 1            # past active-support end
+    low: 0
+    unknown: 0
+  version_gap:         # how many PHP branches newer than the detected one exist (7.4 -> 5)
+    - { min_branches_behind: 8, points: 3 }
+    - { min_branches_behind: 5, points: 2 }
+    - { min_branches_behind: 3, points: 1 }
+  cve_count:           # number of example CVEs known for the detected branch
+    min: 3
+    points: 1
+  wordpress_points: 1  # WordPress detected: plugin/theme compatibility work is likely
+
+thresholds:
+  basic_max_score: 3     # score <= 3  -> Basic
+  standard_max_score: 4  # score <= 4  -> Standard, anything higher -> Complex

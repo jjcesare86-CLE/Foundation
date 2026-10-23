@@ -1,0 +1,9 @@
+# PHP Shield -- delivery checklist template. Copied onto every order; an order cannot be
+# marked "delivered" until every item is ticked. Edit freely (keys must stay unique).
+items:
+  - { key: backup_taken,          label: "Full backup taken (files + database) and restore tested" }
+  - { key: staging_tested,        label: "Changes tested on a staging copy" }
+  - { key: php_upgraded,          label: "PHP upgraded to a supported version" }
+  - { key: deps_patched,          label: "Core, plugins, themes and libraries patched" }
+  - { key: rollback_verified,     label: "Rollback procedure verified" }
+  - { key: post_fix_rescan_clean, label: "Post-fix rescan is clean" }
