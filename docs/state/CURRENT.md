@@ -34,3 +34,4 @@ See `docs/specs/00_STATE_OF_THE_BUILD.md` (rewritten 2026-09-09 — 35 agents, c
 - Live probes: `/employees/?platform=automation-nation` = 200 with 35 rows; `/ops/agent-health` without key = 403; `/health` = 200; `/switchboard/bootstrap` without token = 401.
 - Blocked: Addendum F missing (see BLOCKED_ON_JOHN.md). Foundation `app/tests` has only 1 test file (pytest: 1 skipped), so most CHECKLIST gates cannot be ticked from tests alone.
 - Next: add Addendum F, then S0; meanwhile I phase 2 (proactive DMs / presence) can start in Foundation.
+- S0 done except the steps that need John: migration 001 applied (switchboard repo PR #2), RLS gate passes, Foundation API has the second client, startup guard, `/switchboard/token`, workspace mirror, dual-mode repo layer, 22 tests. Resume: after Render env is set, run the live Foundation-key-vs-Switchboard-project check, flip `SWITCHBOARD_DB_MODE`, then item I phase 2.

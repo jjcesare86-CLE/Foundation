@@ -68,6 +68,18 @@ _Tick as you go. Each item's VERIFY gate is in its spec. Never start the next it
 - [ ] Scoreboard UI per approved mockup; recommendation → action library
 - [ ] v1.1: calls (VAPI + tracking numbers) and web traffic (GA4 card + beacon)
 
+## S0 — Switchboard's own Supabase project (`SWITCHBOARD_ADDENDUM_F_SEPARATE_DATABASE.md`)
+- [x] S0.2 Migration 001 applied to `gytuxzlrsgbueabywxhh` (switchboard repo PR #2); RLS on all 8 tables; live RLS gate `RLS_TESTS_PASSED: 51 checks`
+- [x] F.9.1 Inventory: every Foundation `sb_*` table has 0 rows (no data copy needed)
+- [x] S0.4 `switchboard_db` client, startup guard (refuses identical URLs / reused keys / reused JWT secret), `POST /switchboard/token`, `sb_workspaces` sync; 22 unit tests green
+- [x] F.9.3 Dual-mode repository layer; same API scenarios pass in `foundation` and `switchboard` mode
+- [ ] S0.3 Render env: the five F.5 vars (John)
+- [ ] Gate: a Foundation key does not work on the Switchboard project and vice versa (needs the Render env; live check)
+- [ ] Gate: widget JWT accepted by the live project (needs `SWITCHBOARD_SUPABASE_JWT_SECRET`; see DECISIONS 2026-10-22 on signing keys)
+- [ ] S0.5 PITR + daily backups (John)
+- [ ] F.9.5 Flip `SWITCHBOARD_DB_MODE=switchboard` (John, after env is set)
+- [ ] F.9.6 Retire Foundation `sb_*` tables (rename only, at least 14 days after flip, separate approval)
+
 ## I — Switchboard web (`SWITCHBOARD_BUILD.md`)
 - [ ] P1 widget core (Shadow DOM), bootstrap/threads, AN embed, `sb_*` tables incl. `open_items`
 - [ ] P2 proactive DMs from action library; presence from `agent_jobs`; handoffs

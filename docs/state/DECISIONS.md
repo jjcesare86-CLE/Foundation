@@ -42,3 +42,11 @@
 ## 2026-10-22 autopilot
 - Used a separate git worktree (`C:\tmp\foundation-sb`, from origin/main) because the dev checkout was on `batch1-expansion` with uncommitted changes. Decided by John (option B).
 - Seeded the switchboard repo directly to main (the one push to main the run prompt authorizes); all later work is PR-only.
+
+## 2026-10-22 S0 (separate Switchboard database)
+- **Workspace JWT claim shape.** PostgREST maps the JWT `role` claim to the Postgres role, so the Switchboard-project token carries `role: authenticated` and the membership role in `sb_role` (Addendum F.3 lists `role`; this is the necessary adaptation). The Phase 1 API token is unchanged (F.9.7).
+- **Tables live in `public`** in the new project, same table and column names as Foundation's Phase 1 schema.
+- **Browsers are read-only.** Only SELECT policies exist for `authenticated`; every write goes through the API with the service role.
+- **Suspension is enforced twice:** the API refuses tokens and API calls when Foundation's `client_profiles.status` is suspended/paused/closed/cancelled/churned (60s mirror cache), and the RLS helper `sb_jwt_workspace()` returns NULL unless `sb_workspaces.status='active'`.
+- **Open risk, signing method.** Recently created Supabase projects may default to asymmetric signing keys; an HS256 token signed with a shared secret would then not be accepted by PostgREST/Realtime. If the live check fails, John enables the project's legacy JWT secret (Settings > JWT) or we switch to the project's current signing method per F.5. Not testable until `SWITCHBOARD_SUPABASE_JWT_SECRET` is set.
+- **Migration history** for the Switchboard project was written to `supabase_migrations.schema_migrations` by hand because `db push` needs the DB password; migration applied via `supabase db query --linked -f`.

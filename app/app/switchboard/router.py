@@ -22,6 +22,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from app.database import supabase
+from app.switchboard import repo, switchboard_db
 from app.switchboard.auth import (
     SwitchboardAuthError, mint_switchboard_jwt, require_switchboard_auth,
     resolve_workspace, verify_host_token,
@@ -57,6 +58,7 @@ async def exchange_auth(body: ExchangeRequest):
     try:
         identity = await verify_host_token(body.access_token, host=body.host)
         membership = resolve_workspace(identity["user_id"], identity.get("email"))
+        _require_active_workspace(membership["workspace_id"])
         token = mint_switchboard_jwt(identity["user_id"], membership["workspace_id"], membership["role"])
     except SwitchboardAuthError as e:
         raise HTTPException(e.status, e.detail)
@@ -64,6 +66,55 @@ async def exchange_auth(body: ExchangeRequest):
     return ExchangeResponse(
         token=token, workspace_id=membership["workspace_id"],
         role=membership["role"], expires_in=SWITCHBOARD_JWT_TTL_SECONDS,
+    )
+
+
+def _require_active_workspace(workspace_id: str) -> None:
+    """Foundation is the source of truth for suspension (F.4.1). No token is minted
+    for a suspended/closed/unknown workspace; the Switchboard mirror is updated so
+    RLS also stops serving it."""
+    try:
+        if switchboard_db.is_configured():
+            status = repo.sync_workspace(workspace_id)
+        else:
+            status = repo.workspace_status(workspace_id)
+    except switchboard_db.SwitchboardConfigError as e:
+        raise SwitchboardAuthError(503, str(e))
+    if status != "active":
+        raise SwitchboardAuthError(403, "this workspace is not active")
+
+
+class WorkspaceTokenResponse(BaseModel):
+    token: str
+    workspace_id: str
+    role: str
+    expires_in: int
+    supabase_url: str
+    anon_key: str
+
+
+@router.post("/token", response_model=WorkspaceTokenResponse)
+async def workspace_token(body: ExchangeRequest):
+    """Exchange a host-product session for a SHORT-LIVED WORKSPACE JWT that the
+    widget uses against the Switchboard Supabase project directly (Realtime reads
+    under RLS). Distinct from /auth/exchange, whose token authenticates calls to
+    this API. Signed with SWITCHBOARD_SUPABASE_JWT_SECRET, never the other secret."""
+    anon = os.getenv("SWITCHBOARD_SUPABASE_ANON_KEY")
+    url = os.getenv("SWITCHBOARD_SUPABASE_URL")
+    if not (anon and url and switchboard_db.is_configured()):
+        raise HTTPException(503, "Switchboard database is not configured on the server")
+    try:
+        identity = await verify_host_token(body.access_token, host=body.host)
+        membership = resolve_workspace(identity["user_id"], identity.get("email"))
+        _require_active_workspace(membership["workspace_id"])
+        token = switchboard_db.mint_workspace_jwt(identity["user_id"], membership["workspace_id"], membership["role"])
+    except SwitchboardAuthError as e:
+        raise HTTPException(e.status, e.detail)
+    except switchboard_db.SwitchboardConfigError as e:
+        raise HTTPException(503, str(e))
+    return WorkspaceTokenResponse(
+        token=token, workspace_id=membership["workspace_id"], role=membership["role"],
+        expires_in=switchboard_db.SWITCHBOARD_DB_JWT_TTL_SECONDS, supabase_url=url, anon_key=anon,
     )
 
 
@@ -79,19 +130,19 @@ def bootstrap(claims: dict = Depends(require_switchboard_auth)):
     entitlements = get_entitlement_mask(workspace_id)
 
     pins = (
-        supabase.schema("foundation").table("sb_pins")
+        repo.table("sb_pins")
         .select("agent_slug,sort_order").eq("client_id", workspace_id).eq("user_id", user_id)
         .order("sort_order").execute().data
     )
     threads = (
-        supabase.schema("foundation").table("sb_threads")
+        repo.table("sb_threads")
         .select("agent_slug,unread_count,last_message_at")
         .eq("client_id", workspace_id).eq("user_id", user_id).execute().data
     )
     unread_by_agent = {t["agent_slug"]: t["unread_count"] for t in threads}
 
     settings_row = (
-        supabase.schema("foundation").table("sb_settings")
+        repo.table("sb_settings")
         .select("*").eq("client_id", workspace_id).eq("user_id", user_id).execute().data
     )
     settings = settings_row[0] if settings_row else {
@@ -113,14 +164,14 @@ def bootstrap(claims: dict = Depends(require_switchboard_auth)):
 
 def _get_or_create_thread(workspace_id: str, user_id: str, agent_slug: str) -> dict:
     existing = (
-        supabase.schema("foundation").table("sb_threads")
+        repo.table("sb_threads")
         .select("*").eq("client_id", workspace_id).eq("user_id", user_id).eq("agent_slug", agent_slug)
         .execute().data
     )
     if existing:
         return existing[0]
     row = {"client_id": workspace_id, "user_id": user_id, "agent_slug": agent_slug}
-    return supabase.schema("foundation").table("sb_threads").insert(row).execute().data[0]
+    return repo.table("sb_threads").insert(row).execute().data[0]
 
 
 @router.get("/threads/{agent_slug}")
@@ -130,12 +181,12 @@ def get_thread(agent_slug: str, limit: int = 50, claims: dict = Depends(require_
         raise HTTPException(403, "this agent is not unlocked for your workspace")
     thread = _get_or_create_thread(workspace_id, user_id, agent_slug)
     messages = (
-        supabase.schema("foundation").table("sb_messages")
+        repo.table("sb_messages")
         .select("*").eq("thread_id", thread["id"]).order("created_at", desc=True).limit(limit).execute().data
     )
     messages.reverse()
     if thread.get("unread_count"):
-        supabase.schema("foundation").table("sb_threads").update({"unread_count": 0}).eq("id", thread["id"]).execute()
+        repo.table("sb_threads").update({"unread_count": 0}).eq("id", thread["id"]).execute()
     return {"thread": thread, "messages": messages}
 
 
@@ -156,12 +207,12 @@ def send_message(agent_slug: str, body: SendMessageRequest, claims: dict = Depen
 
     thread = _get_or_create_thread(workspace_id, user_id, agent_slug)
     history = (
-        supabase.schema("foundation").table("sb_messages")
+        repo.table("sb_messages")
         .select("sender,body").eq("thread_id", thread["id"]).order("created_at", desc=True).limit(30).execute().data
     )
     history.reverse()
 
-    supabase.schema("foundation").table("sb_messages").insert(
+    repo.table("sb_messages").insert(
         {"thread_id": thread["id"], "sender": "user", "kind": "text", "body": body.text}
     ).execute()
 
@@ -171,12 +222,12 @@ def send_message(agent_slug: str, body: SendMessageRequest, claims: dict = Depen
         logger.exception("switchboard reply generation failed for agent=%s thread=%s", agent_slug, thread["id"])
         reply_text = "Sorry -- I hit an error generating a reply. Try again in a moment."
 
-    reply_row = supabase.schema("foundation").table("sb_messages").insert(
+    reply_row = repo.table("sb_messages").insert(
         {"thread_id": thread["id"], "sender": "agent", "kind": "text", "body": reply_text}
     ).execute().data[0]
 
     from datetime import datetime, timezone
-    supabase.schema("foundation").table("sb_threads").update(
+    repo.table("sb_threads").update(
         {"last_message_at": datetime.now(timezone.utc).isoformat()}
     ).eq("id", thread["id"]).execute()
 
@@ -193,11 +244,13 @@ class PinRequest(BaseModel):
 def set_pin(body: PinRequest, claims: dict = Depends(require_switchboard_auth)):
     workspace_id, user_id = claims["workspace_id"], claims["user_id"]
     if body.action == "add":
-        supabase.schema("foundation").table("sb_pins").upsert(
+        if not supabase.schema("foundation").table("ai_employees").select("id").eq("id", body.agent_slug).execute().data:
+            raise HTTPException(404, "unknown agent")
+        repo.table("sb_pins").upsert(
             {"client_id": workspace_id, "user_id": user_id, "agent_slug": body.agent_slug, "sort_order": body.sort_order}
         ).execute()
     elif body.action == "remove":
-        supabase.schema("foundation").table("sb_pins").delete().eq("client_id", workspace_id).eq(
+        repo.table("sb_pins").delete().eq("client_id", workspace_id).eq(
             "user_id", user_id
         ).eq("agent_slug", body.agent_slug).execute()
     else:

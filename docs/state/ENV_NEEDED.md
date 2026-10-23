@@ -23,6 +23,6 @@ _Generated 2026-10-22 by the autopilot run from `grep os.getenv/os.environ` over
 ## Needed by the Switchboard build, not yet read by any code (name only)
 | Name | Needed for | Status |
 |---|---|---|
-| SWITCHBOARD_SUPABASE_URL, SWITCHBOARD_SUPABASE_SERVICE_ROLE_KEY, SWITCHBOARD_SUPABASE_ANON_KEY, SWITCHBOARD_SUPABASE_JWT_SECRET, SWITCHBOARD_SUPABASE_PROJECT_REF | S0 (separate Switchboard project, Addendum F). **Exact names are a guess from the run prompt ("the five SWITCHBOARD_SUPABASE_*/PROJECT_REF vars"); Addendum F was not in the package, so confirm names.** | MISSING |
+| SWITCHBOARD_SUPABASE_URL, SWITCHBOARD_SUPABASE_SERVICE_ROLE_KEY, SWITCHBOARD_SUPABASE_ANON_KEY, SWITCHBOARD_SUPABASE_JWT_SECRET, SWITCHBOARD_PROJECT_REF (+ SWITCHBOARD_DB_MODE, optional, default `foundation`; read by code as of S0.4) | S0 (separate Switchboard project, Addendum F). Names confirmed by Addendum F.5 (SWITCHBOARD_PROJECT_REF, not _SUPABASE_PROJECT_REF). | MISSING |
 | LIVEKIT_URL, LIVEKIT_API_KEY, LIVEKIT_API_SECRET | Work Rooms (P), PTT (L) | MISSING |
 | STT provider key (name TBD) | Work Rooms captions/notes | MISSING |
