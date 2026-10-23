@@ -28,3 +28,9 @@ _Claude Code: read this at session start, update it before session end._
 
 ## Last verified facts
 See `docs/specs/00_STATE_OF_THE_BUILD.md` (rewritten 2026-09-09 — 35 agents, current department table, Gabriel status, `/agents` route history closed out), `docs/specs/BATCH1_COMPLETION_REPORT.md`, `docs/specs/BATCH2_3_COMPLETION_REPORT.md`, `docs/specs/CONNECTIONS_HUB_COMPLETION_REPORT.md`, `docs/specs/PROOF_OF_WORK_COMPLETION.md`, `docs/specs/SWITCHBOARD_PHASE1_COMPLETION.md`, `docs/state/OPS_AUDIT.md`. `GET /employees/?platform=automation-nation` returns 35, live-verified 2026-09-09. `/employees/` (never `/agents`, which no longer exists in the codebase) is the real roster route.
+
+## Autopilot run 2026-10-22 (branch sb/autopilot-base)
+- Done: preflight. `jjcesare86-CLE/switchboard` created and seeded (main), PR #1 fixes its CI script. Foundation work is in worktree `C:\tmp\foundation-sb` (dev checkout on `batch1-expansion` was dirty, left untouched). Switchboard project ref `gytuxzlrsgbueabywxhh` confirmed by John.
+- Live probes: `/employees/?platform=automation-nation` = 200 with 35 rows; `/ops/agent-health` without key = 403; `/health` = 200; `/switchboard/bootstrap` without token = 401.
+- Blocked: Addendum F missing (see BLOCKED_ON_JOHN.md). Foundation `app/tests` has only 1 test file (pytest: 1 skipped), so most CHECKLIST gates cannot be ticked from tests alone.
+- Next: add Addendum F, then S0; meanwhile I phase 2 (proactive DMs / presence) can start in Foundation.
