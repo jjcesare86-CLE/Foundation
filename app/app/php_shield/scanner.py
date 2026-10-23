@@ -2,21 +2,20 @@
 PHP Shield -- passive PHP fingerprinting.
 
 Reads ONLY public signals from three ordinary GET requests (X-Powered-By,
-Server, PHPSESSID cookie, body text). No authentication, no exploitation,
-no payloads. Only scan sites you own or have permission to assess.
+Server, PHPSESSID cookie, body text). No authentication, no exploitation, no
+payloads. All traffic goes through netsafe.fetch (SSRF-safe, IP-pinned).
+Consent-based: callers must have recorded the visitor's "I own or am
+authorized to scan this site" confirmation before invoking scan().
 """
 import re
-from dataclasses import dataclass, field, asdict
-from typing import Optional
-from urllib.parse import urlparse
+from dataclasses import asdict, dataclass, field
+from typing import Callable, Optional
 
-import requests
-
+from app.php_shield import netsafe
 from app.php_shield.php_version_db import risk_report
+from app.php_shield.store import iso
 
 PROBE_PATHS = ["/", "/wp-login.php", "/readme.html"]
-TIMEOUT_SECONDS = 8
-USER_AGENT = "PHPShield-Scanner/1.0 (passive; +https://automaitionnation.com)"
 
 _PHP_VERSION_RE = re.compile(r"PHP/(\d+\.\d+(?:\.\d+)?)", re.I)
 _WP_GENERATOR_RE = re.compile(r"WordPress (\d+\.\d+(?:\.\d+)?)", re.I)
@@ -25,95 +24,96 @@ _WP_GENERATOR_RE = re.compile(r"WordPress (\d+\.\d+(?:\.\d+)?)", re.I)
 @dataclass
 class ScanResult:
     url: str
+    domain: str = ""
     php_detected: bool = False
     version: Optional[str] = None
     confidence: str = "none"  # none | low | medium | high
-    evidence: list[str] = field(default_factory=list)
+    evidence: list = field(default_factory=list)
     risk: Optional[dict] = None
     error: Optional[str] = None
+    wordpress: bool = False
+    scanned_at: str = ""
 
     def to_dict(self) -> dict:
         return asdict(self)
 
 
-def _normalize(url: str) -> str:
-    url = (url or "").strip()
-    if not url:
-        raise ValueError("url required")
-    if "://" not in url:
-        url = "https://" + url
-    parsed = urlparse(url)
-    if parsed.scheme not in ("http", "https") or not parsed.netloc:
-        raise ValueError("url must be http(s)")
-    return f"{parsed.scheme}://{parsed.netloc}"
+def _bump(result: ScanResult, level: str):
+    order = ["none", "low", "medium", "high"]
+    if order.index(level) > order.index(result.confidence):
+        result.confidence = level
 
 
-def scan(url: str) -> ScanResult:
+def scan(url: str, *, fetcher: Callable = netsafe.fetch) -> ScanResult:
+    """Never raises for bad/blocked/unreachable targets: failures land in .error."""
+    result = ScanResult(url=url or "", scanned_at=iso())
     try:
-        base = _normalize(url)
-    except ValueError as e:
-        return ScanResult(url=url or "", error=str(e))
+        base = netsafe.validate_url(netsafe.normalize_user_url(url))
+    except netsafe.UnsafeURL as e:
+        result.error = str(e)
+        return result
 
-    result = ScanResult(url=base)
+    origin = f"{base.scheme}://{base.host}"
+    result.url = origin
+    result.domain = netsafe.registrable_host(base.host)
     reached = False
 
     for path in PROBE_PATHS:
         try:
-            resp = requests.get(
-                base + path, timeout=TIMEOUT_SECONDS, allow_redirects=True,
-                headers={"User-Agent": USER_AGENT},
-            )
-        except requests.RequestException as e:
-            if path == "/" and not reached:
-                result.error = f"could not reach site: {type(e).__name__}"
+            resp = fetcher(origin + path)
+        except netsafe.UnsafeURL as e:
+            result.error = f"blocked: {e}"
+            return result
+        except netsafe.FetchError as e:
+            if not reached:
+                result.error = f"could not reach site: {e}"
                 return result
             continue
         reached = True
+        if resp.tls_verified is False and path == "/":
+            result.evidence.append("TLS certificate did not validate (expired, self-signed or mismatched)")
 
-        powered = resp.headers.get("X-Powered-By", "")
+        powered = resp.headers.get("x-powered-by", "")
         m = _PHP_VERSION_RE.search(powered)
         if m:
             result.php_detected = True
             result.version = result.version or m.group(1)
-            result.confidence = "high"
+            _bump(result, "high")
             result.evidence.append(f"{path}: X-Powered-By: {powered}")
         elif "php" in powered.lower():
             result.php_detected = True
-            result.confidence = result.confidence if result.confidence == "high" else "medium"
+            _bump(result, "medium")
             result.evidence.append(f"{path}: X-Powered-By: {powered} (no version)")
 
-        server = resp.headers.get("Server", "")
+        server = resp.headers.get("server", "")
         m = _PHP_VERSION_RE.search(server)
         if m:
             result.php_detected = True
             result.version = result.version or m.group(1)
-            result.confidence = "high"
+            _bump(result, "high")
             result.evidence.append(f"{path}: Server: {server}")
 
-        if "PHPSESSID" in resp.cookies or "PHPSESSID" in resp.headers.get("Set-Cookie", ""):
-            if not result.php_detected:
-                result.confidence = "medium"
+        if any(c.startswith("PHPSESSID") for c in resp.set_cookies):
             result.php_detected = True
+            _bump(result, "medium")
             result.evidence.append(f"{path}: PHPSESSID cookie present")
 
-        body = resp.text[:200_000] if resp.status_code == 200 else ""
-        if path == "/wp-login.php" and resp.status_code == 200 and "wp-submit" in body:
-            result.php_detected = True
-            if result.confidence in ("none", "low"):
-                result.confidence = "medium"
+        body = resp.body if resp.status == 200 else ""
+        if path == "/wp-login.php" and "wp-submit" in body:
+            result.php_detected = result.wordpress = True
+            _bump(result, "medium")
             result.evidence.append("/wp-login.php: WordPress login page (runs on PHP)")
-        if path == "/readme.html" and resp.status_code == 200:
+        if path == "/readme.html":
             m = _WP_GENERATOR_RE.search(body)
             if m:
-                result.php_detected = True
-                if result.confidence == "none":
-                    result.confidence = "low"
+                result.php_detected = result.wordpress = True
+                _bump(result, "low")
                 result.evidence.append(f"/readme.html: WordPress {m.group(1)} readme (PHP version not disclosed)")
         m = _PHP_VERSION_RE.search(body)
         if m and not result.version:
             result.php_detected = True
             result.version = m.group(1)
-            result.confidence = "low" if result.confidence == "none" else result.confidence
+            _bump(result, "low")
             result.evidence.append(f"{path}: PHP/{m.group(1)} mentioned in page body")
 
     if result.version:
