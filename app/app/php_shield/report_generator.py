@@ -72,6 +72,6 @@ def render_report(result: ScanResult, site_name: Optional[str] = None) -> str:
     <div class="tier"><div class="price">$99/mo</div><strong>Maintenance</strong>
       <p class="muted">Ongoing updates, monitoring and security patching so you never fall behind again.</p></div>
   </div>
-  <a class="cta" href="https://automationnation.com">Get my site fixed</a>
+  <a class="cta" href="https://automaitionnation.com">Get my site fixed</a>
   <p class="muted" style="margin-top:32px">This report is based only on publicly visible signals from ordinary page requests. No login or exploitation was attempted.</p>
 </div></body></html>"""

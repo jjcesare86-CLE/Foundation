@@ -16,7 +16,7 @@ from app.php_shield.php_version_db import risk_report
 
 PROBE_PATHS = ["/", "/wp-login.php", "/readme.html"]
 TIMEOUT_SECONDS = 8
-USER_AGENT = "PHPShield-Scanner/1.0 (passive; +https://automationnation.com)"
+USER_AGENT = "PHPShield-Scanner/1.0 (passive; +https://automaitionnation.com)"
 
 _PHP_VERSION_RE = re.compile(r"PHP/(\d+\.\d+(?:\.\d+)?)", re.I)
 _WP_GENERATOR_RE = re.compile(r"WordPress (\d+\.\d+(?:\.\d+)?)", re.I)
